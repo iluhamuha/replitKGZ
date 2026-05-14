@@ -20,13 +20,15 @@ export default function Home() {
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
         <div className="container relative z-20 text-center text-white px-4">
-          <p className="text-sm md:text-base uppercase tracking-[0.25em] text-gray-300 mb-5 font-medium">
-            Z Prahy do Kyrgyzstanu
-          </p>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 max-w-4xl mx-auto drop-shadow-lg leading-[1.05]">
-            Nic víc.
+          <h1 className="font-bold tracking-tight drop-shadow-lg leading-none mb-4">
+            <span className="block text-4xl md:text-6xl lg:text-7xl text-white">
+              Z Prahy do Kyrgyzstanu.
+            </span>
+            <span className="block text-4xl md:text-6xl lg:text-7xl text-primary mt-1">
+              Nic víc.
+            </span>
           </h1>
-          <p className="text-lg md:text-xl max-w-xl mx-auto mb-10 text-gray-200 drop-shadow leading-relaxed">
+          <p className="text-base md:text-lg max-w-lg mx-auto mb-10 text-gray-300 drop-shadow leading-relaxed mt-8">
             Dobrodružné cesty do srdce Tian Shan. Jurty, průsmyky, koně a ticho, které v Praze nenajdete.
           </p>
           <div className="flex gap-4 justify-center">
