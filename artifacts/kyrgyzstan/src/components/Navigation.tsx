@@ -14,9 +14,6 @@ export function Navigation() {
           <Link href="/galerie" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             Galerie
           </Link>
-          <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            Administrace
-          </Link>
         </nav>
       </div>
     </header>
