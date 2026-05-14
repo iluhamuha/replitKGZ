@@ -11,6 +11,7 @@ import TripDetail from "@/pages/TripDetail";
 import QrPayment from "@/pages/QrPayment";
 import Success from "@/pages/Success";
 import Admin from "@/pages/Admin";
+import Gallery from "@/pages/Gallery";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -33,6 +34,7 @@ function Router() {
           <Route path="/payment/qr/:bookingId" component={QrPayment} />
           <Route path="/payment/success" component={Success} />
           <Route path="/admin" component={Admin} />
+          <Route path="/galerie" component={Gallery} />
           <Route component={NotFound} />
         </Switch>
       </main>

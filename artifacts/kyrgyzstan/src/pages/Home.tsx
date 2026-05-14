@@ -12,22 +12,25 @@ export default function Home() {
   return (
     <div className="min-h-screen pb-12">
       {/* Hero Section */}
-      <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center bg-secondary overflow-hidden">
-        <div className="absolute inset-0 bg-black/40 z-10" />
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1518182170546-076616fdfaaf?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80')] bg-cover bg-center" />
+      <section className="relative w-full h-[75vh] min-h-[560px] flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-black/45 z-10" />
+        <img
+          src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2000&q=85"
+          alt="Kyrgyzstán hory"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
         <div className="container relative z-20 text-center text-white px-4">
-          <Badge className="bg-primary/90 text-primary-foreground mb-6 hover:bg-primary border-none">
-            Dobrodružství v Tian Shan
-          </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 max-w-4xl mx-auto drop-shadow-lg leading-tight">
-            Objevte divokou krásu Kyrgyzstánu
+          <p className="text-sm md:text-base uppercase tracking-[0.25em] text-gray-300 mb-5 font-medium">
+            Z Prahy do Kyrgyzstanu
+          </p>
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 max-w-4xl mx-auto drop-shadow-lg leading-[1.05]">
+            Nic víc.
           </h1>
-          <p className="text-lg md:text-xl max-w-2xl mx-auto mb-10 text-gray-100 drop-shadow">
-            Vydejte se s námi do srdce střední Asie. Zažijte nespoutanou přírodu, 
-            kočovnickou kulturu a monumentální hory, které vám vezmou dech.
+          <p className="text-lg md:text-xl max-w-xl mx-auto mb-10 text-gray-200 drop-shadow leading-relaxed">
+            Dobrodružné cesty do srdce Tian Shan. Jurty, průsmyky, koně a ticho, které v Praze nenajdete.
           </p>
           <div className="flex gap-4 justify-center">
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-xl" asChild>
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-xl px-8" asChild>
               <a href="#zajezdy">Prohlédnout zájezdy</a>
             </Button>
           </div>
