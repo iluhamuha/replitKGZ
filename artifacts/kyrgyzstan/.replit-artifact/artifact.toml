@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Kyrgyzstán Zájezdy"
+version = "1.0.0"
+id = "artifacts/kyrgyzstan"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18438
+
+[services.development]
+run = "pnpm --filter @workspace/kyrgyzstan run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kyrgyzstan", "run", "build" ]
+publicDir = "artifacts/kyrgyzstan/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18438"
+BASE_PATH = "/"

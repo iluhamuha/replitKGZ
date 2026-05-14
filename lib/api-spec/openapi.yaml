@@ -3,20 +3,26 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Kyrgyzstán Zájezdy API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: trips
+    description: Trip listings
+  - name: bookings
+    description: Booking management
+  - name: payments
+    description: Payment processing
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +30,271 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /trips:
+    get:
+      operationId: listTrips
+      tags: [trips]
+      summary: List all active trips
+      responses:
+        "200":
+          description: List of active trips
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trip"
+
+  /trips/{id}:
+    get:
+      operationId: getTrip
+      tags: [trips]
+      summary: Get trip details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trip detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "404":
+          description: Trip not found
+
+  /trips/{id}/bookings:
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Create a new booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        "201":
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          description: Validation error
+        "404":
+          description: Trip not found
+
+  /bookings/{id}:
+    get:
+      operationId: getBooking
+      tags: [bookings]
+      summary: Get booking details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Booking details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Booking not found
+
+  /bookings/{id}/stripe-session:
+    post:
+      operationId: createStripeSession
+      tags: [payments]
+      summary: Create Stripe checkout session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Stripe checkout URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripeSessionResult"
+        "400":
+          description: Bad request
+        "404":
+          description: Booking not found
+
+  /bookings/{id}/qr-payment:
+    get:
+      operationId: getQrPayment
+      tags: [payments]
+      summary: Get QR payment details for a booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: QR payment details including base64 QR image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrPaymentDetails"
+        "404":
+          description: Booking not found
+
+  /stripe/webhook:
+    post:
+      operationId: stripeWebhook
+      tags: [payments]
+      summary: Stripe webhook handler
+      responses:
+        "200":
+          description: Webhook processed
+
+  /admin/trips:
+    get:
+      operationId: adminListTrips
+      tags: [trips]
+      summary: Admin - list all trips including inactive
+      responses:
+        "200":
+          description: All trips
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trip"
+    post:
+      operationId: adminCreateTrip
+      tags: [trips]
+      summary: Admin - create a new trip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripInput"
+      responses:
+        "201":
+          description: Created trip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+
+  /admin/trips/{id}:
+    patch:
+      operationId: adminUpdateTrip
+      tags: [trips]
+      summary: Admin - update a trip
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripUpdate"
+      responses:
+        "200":
+          description: Updated trip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "404":
+          description: Not found
+    delete:
+      operationId: adminDeleteTrip
+      tags: [trips]
+      summary: Admin - delete a trip
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/bookings:
+    get:
+      operationId: adminListBookings
+      tags: [bookings]
+      summary: Admin - list all bookings
+      responses:
+        "200":
+          description: All bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+
+  /admin/bookings/{id}/status:
+    patch:
+      operationId: adminUpdateBookingStatus
+      tags: [bookings]
+      summary: Admin - update booking status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingStatusUpdate"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [bookings]
+      summary: Admin dashboard stats
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +305,168 @@ components:
       required:
         - status
 
+    Trip:
+      type: object
+      required: [id, name, destination, description, priceCzk, days, availableSpots, active]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        destination:
+          type: string
+        description:
+          type: string
+        priceCzk:
+          type: number
+        days:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        availableSpots:
+          type: integer
+        active:
+          type: boolean
+        depositAmount:
+          type: number
+
+    TripInput:
+      type: object
+      required: [name, destination, description, priceCzk, days]
+      properties:
+        name:
+          type: string
+        destination:
+          type: string
+        description:
+          type: string
+        priceCzk:
+          type: number
+        days:
+          type: integer
+        imageUrl:
+          type: string
+        availableSpots:
+          type: integer
+        active:
+          type: boolean
+
+    TripUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        destination:
+          type: string
+        description:
+          type: string
+        priceCzk:
+          type: number
+        days:
+          type: integer
+        imageUrl:
+          type: string
+        availableSpots:
+          type: integer
+        active:
+          type: boolean
+
+    Booking:
+      type: object
+      required: [id, tripId, customerName, customerEmail, bookingType, paymentMethod, amountCzk, status, createdAt]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        trip:
+          $ref: "#/components/schemas/Trip"
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: ["string", "null"]
+        bookingType:
+          type: string
+          enum: [deposit, full]
+        paymentMethod:
+          type: string
+          enum: [card, qr]
+        amountCzk:
+          type: number
+        status:
+          type: string
+          enum: [pending, deposit_paid, fully_paid, cancelled]
+        stripeSessionId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    BookingInput:
+      type: object
+      required: [customerName, customerEmail, bookingType, paymentMethod]
+      properties:
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        bookingType:
+          type: string
+          enum: [deposit, full]
+        paymentMethod:
+          type: string
+          enum: [card, qr]
+
+    BookingStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, deposit_paid, fully_paid, cancelled]
+
+    StripeSessionResult:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+
+    QrPaymentDetails:
+      type: object
+      required: [bookingId, iban, recipientName, amountCzk, variableSymbol, qrBase64, tripName, customerEmail]
+      properties:
+        bookingId:
+          type: integer
+        iban:
+          type: string
+        recipientName:
+          type: string
+        amountCzk:
+          type: number
+        variableSymbol:
+          type: string
+        qrBase64:
+          type: string
+        tripName:
+          type: string
+        customerEmail:
+          type: string
+
+    AdminStats:
+      type: object
+      required: [totalBookings, pendingBookings, paidBookings, totalRevenueCzk, activeTrips]
+      properties:
+        totalBookings:
+          type: integer
+        pendingBookings:
+          type: integer
+        paidBookings:
+          type: integer
+        totalRevenueCzk:
+          type: number
+        activeTrips:
+          type: integer
