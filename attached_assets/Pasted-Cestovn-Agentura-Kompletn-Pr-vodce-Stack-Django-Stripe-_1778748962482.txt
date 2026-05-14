@@ -1,0 +1,705 @@
+Cestovní Agentura — Kompletní Průvodce
+Stack: Django · Stripe · QR Platba · Supabase · Railway
+
+Co získáš na konci
+Živý český web kde:
+
+Zákazníci si prohlédnou zájezdy do Kyrgyzstánu
+Zaplatí kartou, Google/Apple Pay přes Stripe — nebo QR platbou přímo na tvůj účet
+Vyberou si zálohu 30 % nebo plnou platbu
+Rezervace se uloží do databáze
+Spravuješ vše z Django admin panelu
+Web běží 24/7 na Railway
+
+
+Přehled všech kroků
+
+Příprava účtů a nástrojů
+Django projekt na Replit
+Model zájezdu + admin
+Stránky (výpis + detail)
+Platební tok — výběr záloha/plná platba + metoda
+Stripe platby (karta, Google Pay, Apple Pay)
+QR platba (česká bankovní platba, nulová provize)
+E-mailové potvrzení rezervace
+Push na GitHub
+Nasazení na Railway
+
+
+ČÁST 1 — Příprava
+1.1 Vytvoř si účty (vše zdarma)
+SlužbaK čemuOdkazReplitPsaní kódureplit.comGitHubUkládání kódugithub.comSupabaseDatabáze PostgreSQLsupabase.comStripePlatby kartou/Google Paystripe.comRailwayHosting weburailway.app
+1.2 Vytvoř projekt na Replit
+
+Přihlas se na replit.com
+Klikni "Create Repl"
+Vyhledej šablonu "Django"
+Pojmenuj projekt kyrgyzstan-trips
+Klikni Create
+
+
+ČÁST 2 — Struktura projektu
+kyrgyzstan-trips/
+│
+├── manage.py
+├── requirements.txt
+├── Procfile                  ← pro Railway
+│
+├── mysite/
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+│
+└── trips/                    ← naše aplikace
+Vytvoř aplikaci trips v Replit Shellu:
+bashpython manage.py startapp trips
+Zaregistruj ji v mysite/settings.py:
+pythonINSTALLED_APPS = [
+    # ... výchozí ...
+    'trips',
+]
+
+ČÁST 3 — Model zájezdu
+Otevři trips/models.py a nahraď vším tímto:
+pythonfrom django.db import models
+
+class Trip(models.Model):
+    nazev = models.CharField(max_length=200)
+    destinace = models.CharField(max_length=200)
+    popis = models.TextField()
+    cena = models.DecimalField(max_digits=10, decimal_places=2)   # v CZK
+    pocet_dni = models.IntegerField()
+    obrazek_url = models.URLField(blank=True)
+    volna_mista = models.IntegerField(default=10)
+    aktivni = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.nazev
+
+    def zalohova_castka(self):
+        """30% záloha zaokrouhlená na celé koruny"""
+        return round(self.cena * 30 / 100)
+
+
+class Rezervace(models.Model):
+    STAV_CHOICES = [
+        ('ceka', 'Čeká na platbu'),
+        ('zalohazaplacena', 'Záloha zaplacena'),
+        ('zaplaceno', 'Plně zaplaceno'),
+        ('zruseno', 'Zrušeno'),
+    ]
+    TYP_PLATBY_CHOICES = [
+        ('karta', 'Karta / Google Pay / Apple Pay'),
+        ('qr', 'QR Platba'),
+    ]
+    TYP_REZERVACE_CHOICES = [
+        ('zaloha', 'Záloha 30 %'),
+        ('plna', 'Plná platba'),
+    ]
+
+    zajezd = models.ForeignKey(Trip, on_delete=models.CASCADE)
+    jmeno = models.CharField(max_length=200)
+    email = models.EmailField()
+    telefon = models.CharField(max_length=30, blank=True)
+    typ_rezervace = models.CharField(max_length=10, choices=TYP_REZERVACE_CHOICES)
+    typ_platby = models.CharField(max_length=10, choices=TYP_PLATBY_CHOICES)
+    castka = models.DecimalField(max_digits=10, decimal_places=2)
+    stav = models.CharField(max_length=20, choices=STAV_CHOICES, default='ceka')
+    stripe_session_id = models.CharField(max_length=200, blank=True)
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.jmeno} — {self.zajezd.nazev} ({self.get_stav_display()})"
+Spusť migrace:
+bashpython manage.py makemigrations
+python manage.py migrate
+python manage.py createsuperuser
+Zaregistruj modely v trips/admin.py:
+pythonfrom django.contrib import admin
+from .models import Trip, Rezervace
+
+@admin.register(Trip)
+class TripAdmin(admin.ModelAdmin):
+    list_display = ['nazev', 'destinace', 'cena', 'pocet_dni', 'volna_mista', 'aktivni']
+
+@admin.register(Rezervace)
+class RezervaceAdmin(admin.ModelAdmin):
+    list_display = ['jmeno', 'email', 'zajezd', 'typ_rezervace', 'castka', 'stav', 'vytvoreno']
+    list_filter = ['stav', 'typ_platby', 'typ_rezervace']
+
+ČÁST 4 — Stránky (Views + Templates)
+4.1 Views
+Otevři trips/views.py a nahraď:
+pythonfrom django.shortcuts import render, get_object_or_404, redirect
+from .models import Trip, Rezervace
+
+def vychozi(request):
+    zajezdy = Trip.objects.filter(aktivni=True)
+    return render(request, 'trips/seznam.html', {'zajezdy': zajezdy})
+
+def detail(request, pk):
+    zajezd = get_object_or_404(Trip, pk=pk, aktivni=True)
+    return render(request, 'trips/detail.html', {'zajezd': zajezd})
+4.2 URLs
+Vytvoř trips/urls.py:
+pythonfrom django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.vychozi, name='vychozi'),
+    path('zajezd/<int:pk>/', views.detail, name='detail'),
+    path('zajezd/<int:pk>/rezervace/', views.rezervace, name='rezervace'),
+    path('platba/stripe/<int:pk>/', views.stripe_checkout, name='stripe_checkout'),
+    path('platba/qr/<int:pk>/', views.qr_platba, name='qr_platba'),
+    path('uspech/', views.uspech, name='uspech'),
+    path('stripe/webhook/', views.stripe_webhook, name='stripe_webhook'),
+]
+Aktualizuj mysite/urls.py:
+pythonfrom django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('trips.urls')),
+]
+4.3 Templates
+Vytvoř složky: trips/templates/trips/
+base.html:
+html<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kyrgyzstán Zájezdy — Praha</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; color: #333; }
+        nav { background: #1a3c5e; padding: 16px 32px; display: flex; align-items: center; }
+        nav a { color: white; text-decoration: none; font-size: 22px; font-weight: bold; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 30px 20px; }
+        .btn { display: inline-block; background: #e8392a; color: white; padding: 13px 28px;
+               border: none; border-radius: 6px; cursor: pointer; font-size: 16px;
+               text-decoration: none; transition: background 0.2s; }
+        .btn:hover { background: #c0301f; }
+        .btn-secondary { background: #1a3c5e; }
+        .btn-secondary:hover { background: #142e49; }
+        .card { background: white; border-radius: 10px; overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 24px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">🏔️ Kyrgyzstán Zájezdy</a>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
+seznam.html:
+html{% extends 'trips/base.html' %}
+
+{% block content %}
+<h1 style="margin-bottom:8px;">Zájezdy do Kyrgyzstánu</h1>
+<p style="color:#666; margin-bottom:30px;">Dobrodružné cesty z Prahy do střední Asie</p>
+
+{% for zajezd in zajezdy %}
+<div class="card" style="display:flex; flex-wrap:wrap;">
+    {% if zajezd.obrazek_url %}
+    <img src="{{ zajezd.obrazek_url }}" style="width:320px; height:220px; object-fit:cover;">
+    {% endif %}
+    <div style="padding:24px; flex:1;">
+        <h2>{{ zajezd.nazev }}</h2>
+        <p style="color:#666; margin:6px 0;">📍 {{ zajezd.destinace }} &nbsp;|&nbsp; 📅 {{ zajezd.pocet_dni }} dní</p>
+        <p style="margin:12px 0;">{{ zajezd.popis|truncatewords:25 }}</p>
+        <p style="font-size:22px; font-weight:bold; color:#1a3c5e;">
+            od {{ zajezd.cena|floatformat:0 }} Kč / osoba
+        </p>
+        <p style="color:#888; font-size:14px; margin-bottom:16px;">
+            nebo záloha {{ zajezd.zalohova_castka|floatformat:0 }} Kč
+        </p>
+        <a href="{% url 'detail' zajezd.pk %}" class="btn">Zobrazit zájezd</a>
+    </div>
+</div>
+{% empty %}
+<p>Zatím žádné zájezdy. Brzy přidáme!</p>
+{% endfor %}
+{% endblock %}
+detail.html:
+html{% extends 'trips/base.html' %}
+
+{% block content %}
+<a href="/" style="color:#666;">← Zpět na všechny zájezdy</a>
+
+<div class="card" style="margin-top:20px;">
+    {% if zajezd.obrazek_url %}
+    <img src="{{ zajezd.obrazek_url }}" style="width:100%; height:380px; object-fit:cover;">
+    {% endif %}
+    <div style="padding:32px;">
+        <h1>{{ zajezd.nazev }}</h1>
+        <p style="color:#666; margin:8px 0 20px;">
+            📍 {{ zajezd.destinace }} &nbsp;|&nbsp;
+            📅 {{ zajezd.pocet_dni }} dní &nbsp;|&nbsp;
+            👥 Zbývá {{ zajezd.volna_mista }} míst
+        </p>
+        <p style="line-height:1.7; font-size:16px;">{{ zajezd.popis }}</p>
+
+        <hr style="margin:30px 0; border:none; border-top:1px solid #eee;">
+
+        <h2 style="margin-bottom:20px;">Rezervace</h2>
+        <form action="{% url 'rezervace' zajezd.pk %}" method="POST">
+            {% csrf_token %}
+
+            <div style="margin-bottom:16px;">
+                <label style="display:block; margin-bottom:6px; font-weight:bold;">Jméno a příjmení</label>
+                <input type="text" name="jmeno" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; font-size:16px;">
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="display:block; margin-bottom:6px; font-weight:bold;">E-mail</label>
+                <input type="email" name="email" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; font-size:16px;">
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="display:block; margin-bottom:6px; font-weight:bold;">Telefon (nepovinné)</label>
+                <input type="tel" name="telefon" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; font-size:16px;">
+            </div>
+
+            <!-- Výběr: záloha nebo plná platba -->
+            <div style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:10px; font-weight:bold;">Typ platby</label>
+                <label style="display:block; padding:14px; border:2px solid #ddd; border-radius:8px; margin-bottom:10px; cursor:pointer;">
+                    <input type="radio" name="typ_rezervace" value="zaloha" checked>
+                    <strong>Záloha 30 % — {{ zajezd.zalohova_castka|floatformat:0 }} Kč</strong>
+                    <span style="color:#666; font-size:14px;"> (zbytek {{ zajezd.cena|floatformat:0 }} Kč uhradíš před odjezdem)</span>
+                </label>
+                <label style="display:block; padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer;">
+                    <input type="radio" name="typ_rezervace" value="plna">
+                    <strong>Plná platba — {{ zajezd.cena|floatformat:0 }} Kč</strong>
+                </label>
+            </div>
+
+            <!-- Výběr: platební metoda -->
+            <div style="margin-bottom:24px;">
+                <label style="display:block; margin-bottom:10px; font-weight:bold;">Způsob platby</label>
+                <label style="display:block; padding:14px; border:2px solid #ddd; border-radius:8px; margin-bottom:10px; cursor:pointer;">
+                    <input type="radio" name="typ_platby" value="karta" checked>
+                    💳 <strong>Karta / Google Pay / Apple Pay</strong>
+                    <span style="color:#888; font-size:13px;"> (přes Stripe, okamžité potvrzení)</span>
+                </label>
+                <label style="display:block; padding:14px; border:2px solid #ddd; border-radius:8px; cursor:pointer;">
+                    <input type="radio" name="typ_platby" value="qr">
+                    📱 <strong>QR Platba</strong>
+                    <span style="color:#888; font-size:13px;"> (bankovní převod, 0 % provize, potvrzení do 24h)</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn" style="width:100%; font-size:18px; padding:16px;">
+                Pokračovat k platbě →
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+ČÁST 5 — Zpracování rezervace (view)
+Přidej do trips/views.py:
+pythondef rezervace(request, pk):
+    zajezd = get_object_or_404(Trip, pk=pk, aktivni=True)
+
+    if request.method != 'POST':
+        return redirect('detail', pk=pk)
+
+    typ_rezervace = request.POST.get('typ_rezervace', 'zaloha')
+    typ_platby = request.POST.get('typ_platby', 'karta')
+    jmeno = request.POST.get('jmeno', '')
+    email = request.POST.get('email', '')
+    telefon = request.POST.get('telefon', '')
+
+    # Vypočítej částku
+    if typ_rezervace == 'zaloha':
+        castka = zajezd.zalohova_castka()
+    else:
+        castka = zajezd.cena
+
+    # Ulož rezervaci
+    rezervace = Rezervace.objects.create(
+        zajezd=zajezd,
+        jmeno=jmeno,
+        email=email,
+        telefon=telefon,
+        typ_rezervace=typ_rezervace,
+        typ_platby=typ_platby,
+        castka=castka,
+        stav='ceka',
+    )
+
+    # Přesměruj na správnou platební metodu
+    if typ_platby == 'karta':
+        return redirect('stripe_checkout', pk=rezervace.pk)
+    else:
+        return redirect('qr_platba', pk=rezervace.pk)
+
+ČÁST 6 — Stripe platby
+6.1 Instalace
+bashpip install stripe
+Přidej stripe do requirements.txt.
+6.2 Stripe klíče
+
+Přihlas se na stripe.com
+Jdi na Developers → API Keys
+Zkopíruj Secret key (sk_test_...) a Publishable key (pk_test_...)
+
+Přidej do Replit Secrets:
+
+STRIPE_SECRET_KEY → sk_test_...
+STRIPE_PUBLISHABLE_KEY → pk_test_...
+STRIPE_WEBHOOK_SECRET → (vyplníš v kroku nasazení)
+
+Přidej do mysite/settings.py:
+pythonimport os
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+6.3 Stripe views
+Přidej do trips/views.py:
+pythonimport stripe
+from django.conf import settings
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+def stripe_checkout(request, pk):
+    rezervace_obj = get_object_or_404(Rezervace, pk=pk)
+    zajezd = rezervace_obj.zajezd
+    DOMAIN = request.build_absolute_uri('/').rstrip('/')
+
+    popis = f"{'Záloha 30 %' if rezervace_obj.typ_rezervace == 'zaloha' else 'Plná platba'} — {zajezd.nazev}"
+
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],   # Google/Apple Pay se přidá automaticky
+        line_items=[{
+            'price_data': {
+                'currency': 'czk',
+                'product_data': {
+                    'name': zajezd.nazev,
+                    'description': popis,
+                },
+                'unit_amount': int(rezervace_obj.castka * 100),  # haléře
+            },
+            'quantity': 1,
+        }],
+        mode='payment',
+        success_url=DOMAIN + '/uspech/?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url=DOMAIN + f'/zajezd/{zajezd.pk}/',
+        customer_email=rezervace_obj.email,
+        metadata={
+            'rezervace_id': rezervace_obj.pk,
+        },
+    )
+
+    rezervace_obj.stripe_session_id = session.id
+    rezervace_obj.save()
+
+    return redirect(session.url, code=303)
+
+
+@csrf_exempt
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+        )
+    except Exception:
+        return HttpResponse(status=400)
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        rezervace_id = session['metadata'].get('rezervace_id')
+        if rezervace_id:
+            try:
+                r = Rezervace.objects.get(pk=rezervace_id)
+                if r.typ_rezervace == 'zaloha':
+                    r.stav = 'zalohazaplacena'
+                else:
+                    r.stav = 'zaplaceno'
+                r.save()
+            except Rezervace.DoesNotExist:
+                pass
+
+    return HttpResponse(status=200)
+
+
+def uspech(request):
+    return render(request, 'trips/uspech.html')
+6.4 Úspěšná stránka
+Vytvoř trips/templates/trips/uspech.html:
+html{% extends 'trips/base.html' %}
+{% block content %}
+<div style="text-align:center; padding:60px;">
+    <div style="font-size:64px;">🎉</div>
+    <h1 style="margin:20px 0 10px;">Rezervace potvrzena!</h1>
+    <p style="color:#666; font-size:18px;">Děkujeme za rezervaci. Potvrzení ti pošleme na e-mail.</p>
+    <br>
+    <a href="/" class="btn">Zpět na zájezdy</a>
+</div>
+{% endblock %}
+
+ČÁST 7 — QR Platba (česká bankovní platba)
+Jak to funguje
+QR platba používá český standard SPD (Short Payment Descriptor). Zákazník naskenuje QR kód ve své bankovní aplikaci (Česká spořitelna, ČSOB, KB, Raiffeisenbank…) a platba se mu předvyplní. Peníze přijdou přímo na tvůj účet — 0 % provize.
+7.1 Instalace knihovny pro QR kód
+bashpip install qrcode[pil]
+Přidej qrcode[pil] do requirements.txt.
+7.2 QR view
+Přidej do trips/views.py:
+pythonimport qrcode
+import io
+import base64
+
+# Sem doplň svůj skutečný IBAN (formát: CZ0000000000000000000000)
+TVUJ_IBAN = "CZ0000000000000000000000"  # ← ZMĚŇ TOTO
+NAZEV_PRIJEMCE = "Kyrgyzstán Zájezdy s.r.o."
+
+def qr_platba(request, pk):
+    rezervace_obj = get_object_or_404(Rezervace, pk=pk)
+    zajezd = rezervace_obj.zajezd
+
+    # Vygeneruj variabilní symbol (číslo rezervace)
+    vs = str(rezervace_obj.pk).zfill(10)
+
+    # SPD řetězec — český standard pro QR platby
+    castka_str = f"{rezervace_obj.castka:.2f}"
+    zprava = f"Zaloha zajezd {zajezd.nazev[:20]}"
+
+    spd = (
+        f"SPD*1.0*"
+        f"ACC:{TVUJ_IBAN}*"
+        f"AM:{castka_str}*"
+        f"CC:CZK*"
+        f"MSG:{zprava}*"
+        f"X-VS:{vs}"
+    )
+
+    # Vygeneruj QR obrázek
+    qr = qrcode.QRCode(version=1, box_size=8, border=4)
+    qr.add_data(spd)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # Převeď na base64 pro zobrazení v HTML
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    context = {
+        'rezervace': rezervace_obj,
+        'zajezd': zajezd,
+        'iban': TVUJ_IBAN,
+        'castka': rezervace_obj.castka,
+        'vs': vs,
+        'nazev_prijemce': NAZEV_PRIJEMCE,
+        'qr_base64': qr_base64,
+    }
+    return render(request, 'trips/qr_platba.html', context)
+7.3 QR platba šablona
+Vytvoř trips/templates/trips/qr_platba.html:
+html{% extends 'trips/base.html' %}
+{% block content %}
+
+<div class="card" style="max-width:600px; margin:0 auto; padding:40px; text-align:center;">
+    <h1 style="margin-bottom:8px;">📱 QR Platba</h1>
+    <p style="color:#666; margin-bottom:30px;">
+        Naskenuj QR kód ve své bankovní aplikaci. Platba se ti předvyplní automaticky.
+    </p>
+
+    <img src="data:image/png;base64,{{ qr_base64 }}"
+         style="width:220px; height:220px; border:4px solid #eee; border-radius:10px; margin-bottom:24px;">
+
+    <div style="background:#f9f9f9; border-radius:8px; padding:20px; text-align:left; margin-bottom:24px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px 0; color:#666;">Příjemce</td>
+                <td style="padding:10px 0; font-weight:bold;">{{ nazev_prijemce }}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px 0; color:#666;">IBAN</td>
+                <td style="padding:10px 0; font-family:monospace;">{{ iban }}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px 0; color:#666;">Částka</td>
+                <td style="padding:10px 0; font-weight:bold; font-size:20px; color:#1a3c5e;">
+                    {{ castka|floatformat:0 }} Kč
+                </td>
+            </tr>
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px 0; color:#666;">Variabilní symbol</td>
+                <td style="padding:10px 0; font-family:monospace; font-weight:bold;">{{ vs }}</td>
+            </tr>
+            <tr>
+                <td style="padding:10px 0; color:#666;">Zájezd</td>
+                <td style="padding:10px 0;">{{ zajezd.nazev }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="background:#fff8e1; border:1px solid #ffe082; border-radius:8px; padding:16px; margin-bottom:24px; text-align:left;">
+        <strong>⏱ Potvrzení do 24 hodin</strong><br>
+        <span style="color:#666; font-size:14px;">
+            Jakmile platbu obdržíme, potvrdíme rezervaci e-mailem na {{ rezervace.email }}.
+            Platba je bezplatná — bez poplatků nebo provizí.
+        </span>
+    </div>
+
+    <a href="/" class="btn btn-secondary">Zpět na zájezdy</a>
+</div>
+
+{% endblock %}
+
+ČÁST 8 — E-mailová potvrzení
+8.1 Nastavení e-mailu
+Pro odesílání e-mailů použij Gmail SMTP (zdarma).
+
+V Gmailu jdi na Nastavení → Zabezpečení → Hesla aplikací
+Vygeneruj heslo pro aplikaci Django
+Přidej do Replit Secrets:
+
+EMAIL_HOST_USER → tvůj Gmail (např. kyrgyzstan.zajezdy@gmail.com)
+EMAIL_HOST_PASSWORD → heslo aplikace
+
+
+
+Přidej do mysite/settings.py:
+pythonEMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+8.2 Odeslání potvrzení po QR platbě
+Přidej na konec qr_platba view (před return render(...)):
+pythonfrom django.core.mail import send_mail
+
+try:
+    send_mail(
+        subject=f'Rezervace přijata — {zajezd.nazev}',
+        message=f"""Dobrý den, {rezervace_obj.jmeno},
+
+Vaše rezervace byla přijata. Čekáme na přijetí platby.
+
+Zájezd: {zajezd.nazev}
+Částka: {rezervace_obj.castka} Kč
+Variabilní symbol: {vs}
+IBAN: {TVUJ_IBAN}
+
+Potvrzení vám zašleme do 24 hodin.
+
+S pozdravem,
+Kyrgyzstán Zájezdy""",
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[rezervace_obj.email],
+        fail_silently=True,
+    )
+except Exception:
+    pass
+
+ČÁST 9 — Push na GitHub
+9.1 Připrav projekt pro produkci
+Nainstaluj potřebné balíčky:
+bashpip install gunicorn whitenoise dj-database-url psycopg2-binary
+Aktualizuj requirements.txt aby obsahoval:
+django
+gunicorn
+whitenoise
+dj-database-url
+psycopg2-binary
+stripe
+qrcode[pil]
+9.2 Aktualizuj settings.py pro produkci
+Na konec mysite/settings.py přidej:
+pythonimport os
+import dj_database_url
+
+# Databáze
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600
+    )
+}
+
+# Statické soubory
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Bezpečnost
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = ['*']
+SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-only-secret-key')
+Do MIDDLEWARE přidej (hned za SecurityMiddleware):
+python'whitenoise.middleware.WhiteNoiseMiddleware',
+9.3 Vytvoř Procfile
+Vytvoř soubor Procfile v kořeni projektu (bez přípony):
+web: python manage.py migrate && gunicorn mysite.wsgi
+9.4 Push na GitHub
+
+V Replit klikni na ikonu Git v levém panelu
+Klikni "Create a Git repo" a připoj GitHub účet
+Commitni všechny soubory se zprávou "Počáteční commit"
+Klikni Push
+
+
+ČÁST 10 — Nasazení na Railway
+10.1 Vytvoř projekt
+
+Jdi na railway.app a přihlas se přes GitHub
+Klikni New Project → Deploy from GitHub repo
+Vyber svůj repozitář kyrgyzstan-trips
+Klikni Deploy
+
+10.2 Přidej proměnné prostředí
+V Railway: projekt → Variables, přidej:
+KlíčHodnotaDATABASE_URLSupabase connection stringSTRIPE_SECRET_KEYsk_test_... (nebo live klíč)STRIPE_PUBLISHABLE_KEYpk_test_...STRIPE_WEBHOOK_SECRET(viz níže)EMAIL_HOST_USERtvůj GmailEMAIL_HOST_PASSWORDGmail heslo aplikaceSECRET_KEYzkopíruj z settings.pyDEBUGFalse
+10.3 Nastavení databáze (Supabase)
+
+Přihlas se na supabase.com → New Project
+Jdi na Settings → Database → Connection string → URI
+Zkopíruj URI a doplň heslo
+Vlož jako DATABASE_URL do Railway Variables
+
+10.4 Stripe webhook
+
+Na stripe.com → Developers → Webhooks → Add endpoint
+URL: https://tvoje-railway-domena.railway.app/stripe/webhook/
+Událost: checkout.session.completed
+Zkopíruj Signing secret a vlož jako STRIPE_WEBHOOK_SECRET do Railway
+
+10.5 Získej živou URL
+V Railway: Settings → Domains → Generate Domain
+Dostaneš URL jako kyrgyzstan-trips.up.railway.app. To je tvůj živý web! 🚀
+
+Výsledek — co máš
+✅ Český web s výpisem zájezdů do Kyrgyzstánu
+✅ Zákazník si vybere zálohu 30 % nebo plnou platbu
+✅ Platba kartou / Google Pay / Apple Pay přes Stripe (CZK)
+✅ QR platba přímo na tvůj účet — 0 % provize
+✅ Databáze na Supabase (PostgreSQL)
+✅ Django admin panel pro správu zájezdů a rezervací
+✅ E-mailová potvrzení rezervací
+✅ Web běží 24/7 na Railway
+
+Tvůj pracovní postup po nasazení
+Upravíš kód na Replit
+        ↓
+Push na GitHub (záložka Git v Replit)
+        ↓
+Railway automaticky znovu nasadí (cca 1 minuta)
+
+Časté problémy a řešení
+ProblémŘešeníALLOWED_HOSTS chybaNastav ALLOWED_HOSTS = ['*'] v settings.pyCSS se nenačítáOvěř že whitenoise je v MIDDLEWAREChyba databázeZkontroluj DATABASE_URL v proměnných prostředíStripe nefungujeZkontroluj STRIPE_SECRET_KEY a webhook secretQR kód se nezobrazujeOvěř že je qrcode[pil] v requirements.txtE-maily se neodesílajíZkontroluj Gmail heslo aplikace v Secrets
