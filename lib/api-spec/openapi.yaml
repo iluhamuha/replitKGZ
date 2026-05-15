@@ -484,6 +484,10 @@ components:
           type: boolean
         depositAmount:
           type: number
+        priceIncludes:
+          type: ["string", "null"]
+        priceExcludes:
+          type: ["string", "null"]
 
     TripInput:
       type: object
@@ -505,6 +509,10 @@ components:
           type: integer
         active:
           type: boolean
+        priceIncludes:
+          type: string
+        priceExcludes:
+          type: string
 
     TripUpdate:
       type: object
@@ -525,6 +533,10 @@ components:
           type: integer
         active:
           type: boolean
+        priceIncludes:
+          type: string
+        priceExcludes:
+          type: string
 
     Booking:
       type: object

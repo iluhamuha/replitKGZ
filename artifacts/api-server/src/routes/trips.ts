@@ -87,6 +87,8 @@ router.post("/admin/trips", async (req, res): Promise<void> => {
       imageUrl: parsed.data.imageUrl ?? null,
       availableSpots: parsed.data.availableSpots ?? 10,
       active: parsed.data.active ?? true,
+      priceIncludes: parsed.data.priceIncludes ?? null,
+      priceExcludes: parsed.data.priceExcludes ?? null,
     })
     .returning();
 
@@ -119,6 +121,8 @@ router.patch("/admin/trips/:id", async (req, res): Promise<void> => {
   if (parsed.data.imageUrl !== undefined) updateData.imageUrl = parsed.data.imageUrl;
   if (parsed.data.availableSpots !== undefined) updateData.availableSpots = parsed.data.availableSpots;
   if (parsed.data.active !== undefined) updateData.active = parsed.data.active;
+  if (parsed.data.priceIncludes !== undefined) updateData.priceIncludes = parsed.data.priceIncludes;
+  if (parsed.data.priceExcludes !== undefined) updateData.priceExcludes = parsed.data.priceExcludes;
 
   const [trip] = await db
     .update(tripsTable)

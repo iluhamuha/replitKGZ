@@ -21,6 +21,10 @@ export interface Trip {
   availableSpots: number;
   active: boolean;
   depositAmount?: number;
+  /** @nullable */
+  priceIncludes?: string | null;
+  /** @nullable */
+  priceExcludes?: string | null;
 }
 
 export interface TripInput {
@@ -32,6 +36,8 @@ export interface TripInput {
   imageUrl?: string;
   availableSpots?: number;
   active?: boolean;
+  priceIncludes?: string;
+  priceExcludes?: string;
 }
 
 export interface TripUpdate {
@@ -43,6 +49,8 @@ export interface TripUpdate {
   imageUrl?: string;
   availableSpots?: number;
   active?: boolean;
+  priceIncludes?: string;
+  priceExcludes?: string;
 }
 
 export type BookingBookingType =

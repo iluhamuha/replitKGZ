@@ -86,6 +86,8 @@ const tripSchema = z.object({
   imageUrl: z.string().url("Musí být platná URL").optional().or(z.literal("")),
   availableSpots: z.coerce.number().min(0).default(10),
   active: z.boolean().default(true),
+  priceIncludes: z.string().optional().default(""),
+  priceExcludes: z.string().optional().default(""),
 });
 
 type TripFormValues = z.infer<typeof tripSchema>;
@@ -172,6 +174,8 @@ export default function Admin() {
       imageUrl: "",
       availableSpots: 10,
       active: true,
+      priceIncludes: "",
+      priceExcludes: "",
     },
   });
 
@@ -186,6 +190,8 @@ export default function Admin() {
       imageUrl: "",
       availableSpots: 10,
       active: true,
+      priceIncludes: "",
+      priceExcludes: "",
     });
     setIsTripDialogOpen(true);
   };
@@ -201,6 +207,8 @@ export default function Admin() {
       imageUrl: trip.imageUrl || "",
       availableSpots: trip.availableSpots,
       active: trip.active,
+      priceIncludes: trip.priceIncludes || "",
+      priceExcludes: trip.priceExcludes || "",
     });
     setIsTripDialogOpen(true);
   };
@@ -584,6 +592,42 @@ export default function Admin() {
                                   onCheckedChange={field.onChange}
                                 />
                               </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="priceIncludes"
+                          render={({ field }) => (
+                            <FormItem className="col-span-2">
+                              <FormLabel>Cena zahrnuje</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  className="min-h-[100px]"
+                                  placeholder={"Jeden řádek = jedna položka. Např.:\nLetenky Praha–Biškek\nUbytování v jurtech\nPrůvodce po celou dobu"}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="priceExcludes"
+                          render={({ field }) => (
+                            <FormItem className="col-span-2">
+                              <FormLabel>Cena nezahrnuje</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  className="min-h-[80px]"
+                                  placeholder={"Jeden řádek = jedna položka. Např.:\nCestovní pojištění\nOsobní výdaje"}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />

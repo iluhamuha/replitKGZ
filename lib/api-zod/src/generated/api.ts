@@ -28,6 +28,8 @@ export const ListTripsResponseItem = zod.object({
   availableSpots: zod.number(),
   active: zod.boolean(),
   depositAmount: zod.number().optional(),
+  priceIncludes: zod.string().nullish(),
+  priceExcludes: zod.string().nullish(),
 });
 export const ListTripsResponse = zod.array(ListTripsResponseItem);
 
@@ -49,6 +51,8 @@ export const GetTripResponse = zod.object({
   availableSpots: zod.number(),
   active: zod.boolean(),
   depositAmount: zod.number().optional(),
+  priceIncludes: zod.string().nullish(),
+  priceExcludes: zod.string().nullish(),
 });
 
 /**
@@ -88,6 +92,8 @@ export const GetBookingResponse = zod.object({
       availableSpots: zod.number(),
       active: zod.boolean(),
       depositAmount: zod.number().optional(),
+      priceIncludes: zod.string().nullish(),
+      priceExcludes: zod.string().nullish(),
     })
     .optional(),
   customerName: zod.string(),
@@ -144,6 +150,8 @@ export const AdminListTripsResponseItem = zod.object({
   availableSpots: zod.number(),
   active: zod.boolean(),
   depositAmount: zod.number().optional(),
+  priceIncludes: zod.string().nullish(),
+  priceExcludes: zod.string().nullish(),
 });
 export const AdminListTripsResponse = zod.array(AdminListTripsResponseItem);
 
@@ -159,6 +167,8 @@ export const AdminCreateTripBody = zod.object({
   imageUrl: zod.string().optional(),
   availableSpots: zod.number().optional(),
   active: zod.boolean().optional(),
+  priceIncludes: zod.string().optional(),
+  priceExcludes: zod.string().optional(),
 });
 
 /**
@@ -177,6 +187,8 @@ export const AdminUpdateTripBody = zod.object({
   imageUrl: zod.string().optional(),
   availableSpots: zod.number().optional(),
   active: zod.boolean().optional(),
+  priceIncludes: zod.string().optional(),
+  priceExcludes: zod.string().optional(),
 });
 
 export const AdminUpdateTripResponse = zod.object({
@@ -190,6 +202,8 @@ export const AdminUpdateTripResponse = zod.object({
   availableSpots: zod.number(),
   active: zod.boolean(),
   depositAmount: zod.number().optional(),
+  priceIncludes: zod.string().nullish(),
+  priceExcludes: zod.string().nullish(),
 });
 
 /**
@@ -217,6 +231,8 @@ export const AdminListBookingsResponseItem = zod.object({
       availableSpots: zod.number(),
       active: zod.boolean(),
       depositAmount: zod.number().optional(),
+      priceIncludes: zod.string().nullish(),
+      priceExcludes: zod.string().nullish(),
     })
     .optional(),
   customerName: zod.string(),
@@ -259,6 +275,8 @@ export const AdminUpdateBookingStatusResponse = zod.object({
       availableSpots: zod.number(),
       active: zod.boolean(),
       depositAmount: zod.number().optional(),
+      priceIncludes: zod.string().nullish(),
+      priceExcludes: zod.string().nullish(),
     })
     .optional(),
   customerName: zod.string(),

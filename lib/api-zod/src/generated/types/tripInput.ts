@@ -15,4 +15,6 @@ export interface TripInput {
   imageUrl?: string;
   availableSpots?: number;
   active?: boolean;
+  priceIncludes?: string;
+  priceExcludes?: string;
 }

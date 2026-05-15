@@ -11,7 +11,7 @@ import {
   BookingInputBookingType,
   BookingInputPaymentMethod
 } from "@workspace/api-client-react";
-import { MapPin, Calendar, Users, CreditCard, QrCode, Mountain, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { MapPin, Calendar, Users, CreditCard, QrCode, Mountain, ArrowLeft, CheckCircle2, Check, X } from "lucide-react";
 import { Link } from "wouter";
 
 import { Button } from "@/components/ui/button";
@@ -194,6 +194,47 @@ export default function TripDetail() {
                   {trip.description}
                 </div>
                 
+                {(trip.priceIncludes || trip.priceExcludes) && (
+                  <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {trip.priceIncludes && (
+                      <div>
+                        <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+                            <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                          </span>
+                          Cena zahrnuje
+                        </h3>
+                        <ul className="space-y-2">
+                          {trip.priceIncludes.split("\n").filter(Boolean).map((item, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                              <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                              {item.trim()}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {trip.priceExcludes && (
+                      <div>
+                        <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/40">
+                            <X className="h-3 w-3 text-red-500 dark:text-red-400" />
+                          </span>
+                          Cena nezahrnuje
+                        </h3>
+                        <ul className="space-y-2">
+                          {trip.priceExcludes.split("\n").filter(Boolean).map((item, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                              <X className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                              {item.trim()}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-10 p-6 bg-muted/40 rounded-xl border border-border/40">
                   <div className="flex flex-col items-center justify-center text-center">
                     <Calendar className="h-8 w-8 text-primary mb-3 opacity-80" />

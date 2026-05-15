@@ -15,4 +15,6 @@ export interface TripUpdate {
   imageUrl?: string;
   availableSpots?: number;
   active?: boolean;
+  priceIncludes?: string;
+  priceExcludes?: string;
 }

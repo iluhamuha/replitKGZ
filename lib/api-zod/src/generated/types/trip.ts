@@ -18,4 +18,8 @@ export interface Trip {
   availableSpots: number;
   active: boolean;
   depositAmount?: number;
+  /** @nullable */
+  priceIncludes?: string | null;
+  /** @nullable */
+  priceExcludes?: string | null;
 }

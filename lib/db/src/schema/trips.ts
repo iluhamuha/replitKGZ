@@ -12,6 +12,8 @@ export const tripsTable = pgTable("trips", {
   imageUrl: text("image_url"),
   availableSpots: integer("available_spots").notNull().default(10),
   active: boolean("active").notNull().default(true),
+  priceIncludes: text("price_includes"),
+  priceExcludes: text("price_excludes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
