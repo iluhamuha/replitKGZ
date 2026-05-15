@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useRef, type ReactNode } from "react";
 import { 
   useGetAdminStats, 
   useAdminListTrips, 
@@ -19,6 +19,7 @@ import {
   type GalleryPhoto,
   type TripDate,
 } from "@workspace/api-client-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -95,7 +96,13 @@ const tripSchema = z.object({
 type TripFormValues = z.infer<typeof tripSchema>;
 
 const galleryPhotoSchema = z.object({
-  imageUrl: z.string().url("Musí být platná URL"),
+  imageUrl: z
+    .string()
+    .min(1, "Přidejte URL nebo nahrajte obrázek")
+    .refine(
+      (v) => /^https?:\/\//.test(v) || v.startsWith("/api/storage/objects/"),
+      "Musí být platná URL (https://...) nebo nahraný soubor"
+    ),
   caption: z.string().min(2, "Povinné pole"),
   location: z.string().optional().default(""),
   sortOrder: z.coerce.number().default(0),
@@ -125,12 +132,23 @@ function TripGalleryManager({ tripId, tripName }: { tripId: number; tripName: st
   const queryClient = useQueryClient();
   const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const [editingPhotoId, setEditingPhotoId] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: photos, isLoading } = useGetTripGallery(tripId);
 
   const createPhoto = useAdminCreateGalleryPhoto();
   const updatePhoto = useAdminUpdateGalleryPhoto();
   const deletePhoto = useAdminDeleteGalleryPhoto();
+
+  const { uploadFile, isUploading } = useUpload({
+    onSuccess: (response) => {
+      galleryForm.setValue("imageUrl", `/api/storage${response.objectPath}`, { shouldValidate: true });
+      toast({ title: "Obrázek nahrán" });
+    },
+    onError: () => {
+      toast({ title: "Chyba při nahrávání", variant: "destructive" });
+    },
+  });
 
   const galleryForm = useForm<GalleryPhotoFormValues>({
     resolver: zodResolver(galleryPhotoSchema),
@@ -222,10 +240,39 @@ function TripGalleryManager({ tripId, tripName }: { tripId: number; tripName: st
                   name="imageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>URL obrázku</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://..." {...field} />
-                      </FormControl>
+                      <FormLabel>Obrázek</FormLabel>
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <FormControl>
+                            <Input placeholder="https://... nebo nahrajte soubor níže" {...field} />
+                          </FormControl>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) await uploadFile(file);
+                              e.target.value = "";
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={isUploading}
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex items-center gap-2"
+                          >
+                            <Image className="h-4 w-4" />
+                            {isUploading ? "Nahrávám..." : "Nahrát ze zařízení"}
+                          </Button>
+                          <span className="text-xs text-muted-foreground">nebo vložte URL výše</span>
+                        </div>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

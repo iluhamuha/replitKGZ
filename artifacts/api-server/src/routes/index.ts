@@ -6,6 +6,7 @@ import paymentsRouter, { createWebhookRouter } from "./payments";
 import galleryRouter from "./gallery";
 import authRouter from "./auth";
 import tripDatesRouter from "./trip-dates";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -17,5 +18,6 @@ router.use(bookingsRouter);
 router.use(paymentsRouter);
 router.use(createWebhookRouter());
 router.use(galleryRouter);
+router.use(storageRouter);
 
 export default router;
