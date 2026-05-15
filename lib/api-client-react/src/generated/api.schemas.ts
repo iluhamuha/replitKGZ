@@ -140,6 +140,21 @@ export interface QrPaymentDetails {
   customerEmail: string;
 }
 
+export interface GalleryPhoto {
+  id: number;
+  imageUrl: string;
+  caption: string;
+  location: string;
+  sortOrder: number;
+}
+
+export interface GalleryPhotoInput {
+  imageUrl: string;
+  caption: string;
+  location?: string;
+  sortOrder?: number;
+}
+
 export interface AdminStats {
   totalBookings: number;
   pendingBookings: number;

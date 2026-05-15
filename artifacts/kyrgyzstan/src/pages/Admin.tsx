@@ -6,6 +6,10 @@ import {
   useAdminUpdateTrip,
   useAdminCreateTrip,
   useAdminUpdateBookingStatus,
+  useAdminListGalleryPhotos,
+  useAdminCreateGalleryPhoto,
+  useAdminUpdateGalleryPhoto,
+  useAdminDeleteGalleryPhoto,
   BookingStatusUpdateStatus
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,7 +28,9 @@ import {
   Pencil,
   MoreVertical,
   Check,
-  X
+  X,
+  Trash2,
+  Image
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,19 +88,75 @@ const tripSchema = z.object({
 
 type TripFormValues = z.infer<typeof tripSchema>;
 
+const galleryPhotoSchema = z.object({
+  imageUrl: z.string().url("Musí být platná URL"),
+  caption: z.string().min(2, "Povinné pole"),
+  location: z.string().optional().default(""),
+  sortOrder: z.coerce.number().default(0),
+});
+
+type GalleryPhotoFormValues = z.infer<typeof galleryPhotoSchema>;
+
 export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isTripDialogOpen, setIsTripDialogOpen] = useState(false);
   const [editingTripId, setEditingTripId] = useState<number | null>(null);
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
+  const [editingPhotoId, setEditingPhotoId] = useState<number | null>(null);
 
   const { data: stats, isLoading: isLoadingStats } = useGetAdminStats();
   const { data: trips, isLoading: isLoadingTrips } = useAdminListTrips();
   const { data: bookings, isLoading: isLoadingBookings } = useAdminListBookings();
+  const { data: galleryPhotos, isLoading: isLoadingGallery } = useAdminListGalleryPhotos();
 
   const createTrip = useAdminCreateTrip();
   const updateTrip = useAdminUpdateTrip();
   const updateBookingStatus = useAdminUpdateBookingStatus();
+  const createPhoto = useAdminCreateGalleryPhoto();
+  const updatePhoto = useAdminUpdateGalleryPhoto();
+  const deletePhoto = useAdminDeleteGalleryPhoto();
+
+  const galleryForm = useForm<GalleryPhotoFormValues>({
+    resolver: zodResolver(galleryPhotoSchema),
+    defaultValues: { imageUrl: "", caption: "", location: "", sortOrder: 0 },
+  });
+
+  const handleOpenCreatePhotoDialog = () => {
+    setEditingPhotoId(null);
+    galleryForm.reset({ imageUrl: "", caption: "", location: "", sortOrder: (galleryPhotos?.length ?? 0) + 1 });
+    setIsPhotoDialogOpen(true);
+  };
+
+  const handleOpenEditPhotoDialog = (photo: any) => {
+    setEditingPhotoId(photo.id);
+    galleryForm.reset({ imageUrl: photo.imageUrl, caption: photo.caption, location: photo.location ?? "", sortOrder: photo.sortOrder });
+    setIsPhotoDialogOpen(true);
+  };
+
+  const onPhotoSubmit = (data: GalleryPhotoFormValues) => {
+    const invalidate = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
+      setIsPhotoDialogOpen(false);
+    };
+    if (editingPhotoId) {
+      updatePhoto.mutate({ id: editingPhotoId, data }, { onSuccess: () => { invalidate(); toast({ title: "Fotografie upravena" }); } });
+    } else {
+      createPhoto.mutate({ data }, { onSuccess: () => { invalidate(); toast({ title: "Fotografie přidána" }); } });
+    }
+  };
+
+  const handleDeletePhoto = (id: number) => {
+    if (!confirm("Opravdu smazat tuto fotografii?")) return;
+    deletePhoto.mutate({ id }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
+        toast({ title: "Fotografie smazána" });
+      },
+    });
+  };
 
   const form = useForm<TripFormValues>({
     resolver: zodResolver(tripSchema),
@@ -272,6 +334,7 @@ export default function Admin() {
         <TabsList>
           <TabsTrigger value="bookings">Rezervace</TabsTrigger>
           <TabsTrigger value="trips">Zájezdy</TabsTrigger>
+          <TabsTrigger value="gallery">Galerie</TabsTrigger>
         </TabsList>
         
         <TabsContent value="bookings" className="space-y-4">
@@ -601,6 +664,158 @@ export default function Admin() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="gallery" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row justify-between items-center">
+              <CardTitle>Fotografie v galerii</CardTitle>
+              <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={handleOpenCreatePhotoDialog}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Přidat fotografii
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>{editingPhotoId ? "Upravit fotografii" : "Nová fotografie"}</DialogTitle>
+                    <DialogDescription>
+                      Vložte URL obrázku a popis. Pořadí určuje pozici v galerii.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...galleryForm}>
+                    <form onSubmit={galleryForm.handleSubmit(onPhotoSubmit)} className="space-y-4 py-2">
+                      <FormField
+                        control={galleryForm.control}
+                        name="imageUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>URL obrázku</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {galleryForm.watch("imageUrl") && (
+                        <div className="rounded-md overflow-hidden border h-40">
+                          <img
+                            src={galleryForm.watch("imageUrl")}
+                            alt="Náhled"
+                            className="w-full h-full object-cover"
+                            onError={(e) => (e.currentTarget.style.display = "none")}
+                          />
+                        </div>
+                      )}
+                      <FormField
+                        control={galleryForm.control}
+                        name="caption"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Popis fotografie</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Jezero Issyk-Kul za svítání" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={galleryForm.control}
+                          name="location"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Lokalita</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Oblast Issyk-Kul" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={galleryForm.control}
+                          name="sortOrder"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Pořadí</FormLabel>
+                              <FormControl>
+                                <Input type="number" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button type="button" variant="outline" onClick={() => setIsPhotoDialogOpen(false)}>
+                          Zrušit
+                        </Button>
+                        <Button type="submit">
+                          {editingPhotoId ? "Uložit změny" : "Přidat fotografii"}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              {isLoadingGallery ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[1,2,3,4].map(i => <Skeleton key={i} className="h-36 rounded-lg" />)}
+                </div>
+              ) : !galleryPhotos || galleryPhotos.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Image className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                  <p>Galerie je prázdná. Přidejte první fotografii.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {galleryPhotos.map((photo) => (
+                    <div key={photo.id} className="group relative rounded-lg overflow-hidden border bg-muted aspect-[4/3]">
+                      <img
+                        src={photo.imageUrl}
+                        alt={photo.caption}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className="h-7 w-7"
+                            onClick={() => handleOpenEditPhotoDialog(photo)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="h-7 w-7"
+                            onClick={() => handleDeletePhoto(photo.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div>
+                          <p className="text-white text-xs font-medium line-clamp-2 leading-tight">{photo.caption}</p>
+                          {photo.location && (
+                            <p className="text-gray-300 text-xs mt-0.5">{photo.location}</p>
+                          )}
+                          <p className="text-gray-400 text-xs mt-1">Pořadí: {photo.sortOrder}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>

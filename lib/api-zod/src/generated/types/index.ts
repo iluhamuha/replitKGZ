@@ -16,6 +16,8 @@ export * from "./bookingPaymentMethod";
 export * from "./bookingStatus";
 export * from "./bookingStatusUpdate";
 export * from "./bookingStatusUpdateStatus";
+export * from "./galleryPhoto";
+export * from "./galleryPhotoInput";
 export * from "./healthStatus";
 export * from "./qrPaymentDetails";
 export * from "./stripeSessionResult";

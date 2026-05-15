@@ -21,6 +21,8 @@ import type {
   Booking,
   BookingInput,
   BookingStatusUpdate,
+  GalleryPhoto,
+  GalleryPhotoInput,
   HealthStatus,
   QrPaymentDetails,
   StripeSessionResult,
@@ -1172,6 +1174,414 @@ export const useAdminUpdateBookingStatus = <
   TContext
 > => {
   return useMutation(getAdminUpdateBookingStatusMutationOptions(options));
+};
+
+/**
+ * @summary List all gallery photos (public)
+ */
+export const getListGalleryPhotosUrl = () => {
+  return `/api/gallery`;
+};
+
+export const listGalleryPhotos = async (
+  options?: RequestInit,
+): Promise<GalleryPhoto[]> => {
+  return customFetch<GalleryPhoto[]>(getListGalleryPhotosUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListGalleryPhotosQueryKey = () => {
+  return [`/api/gallery`] as const;
+};
+
+export const getListGalleryPhotosQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGalleryPhotos>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGalleryPhotos>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListGalleryPhotosQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listGalleryPhotos>>
+  > = ({ signal }) => listGalleryPhotos({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGalleryPhotos>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGalleryPhotosQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGalleryPhotos>>
+>;
+export type ListGalleryPhotosQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all gallery photos (public)
+ */
+
+export function useListGalleryPhotos<
+  TData = Awaited<ReturnType<typeof listGalleryPhotos>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGalleryPhotos>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGalleryPhotosQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Admin - list all gallery photos
+ */
+export const getAdminListGalleryPhotosUrl = () => {
+  return `/api/admin/gallery`;
+};
+
+export const adminListGalleryPhotos = async (
+  options?: RequestInit,
+): Promise<GalleryPhoto[]> => {
+  return customFetch<GalleryPhoto[]>(getAdminListGalleryPhotosUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminListGalleryPhotosQueryKey = () => {
+  return [`/api/admin/gallery`] as const;
+};
+
+export const getAdminListGalleryPhotosQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListGalleryPhotos>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListGalleryPhotos>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminListGalleryPhotosQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListGalleryPhotos>>
+  > = ({ signal }) => adminListGalleryPhotos({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListGalleryPhotos>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListGalleryPhotosQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListGalleryPhotos>>
+>;
+export type AdminListGalleryPhotosQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Admin - list all gallery photos
+ */
+
+export function useAdminListGalleryPhotos<
+  TData = Awaited<ReturnType<typeof adminListGalleryPhotos>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListGalleryPhotos>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListGalleryPhotosQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Admin - add a gallery photo
+ */
+export const getAdminCreateGalleryPhotoUrl = () => {
+  return `/api/admin/gallery`;
+};
+
+export const adminCreateGalleryPhoto = async (
+  galleryPhotoInput: GalleryPhotoInput,
+  options?: RequestInit,
+): Promise<GalleryPhoto> => {
+  return customFetch<GalleryPhoto>(getAdminCreateGalleryPhotoUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(galleryPhotoInput),
+  });
+};
+
+export const getAdminCreateGalleryPhotoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateGalleryPhoto>>,
+    TError,
+    { data: BodyType<GalleryPhotoInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateGalleryPhoto>>,
+  TError,
+  { data: BodyType<GalleryPhotoInput> },
+  TContext
+> => {
+  const mutationKey = ["adminCreateGalleryPhoto"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateGalleryPhoto>>,
+    { data: BodyType<GalleryPhotoInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminCreateGalleryPhoto(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateGalleryPhotoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateGalleryPhoto>>
+>;
+export type AdminCreateGalleryPhotoMutationBody = BodyType<GalleryPhotoInput>;
+export type AdminCreateGalleryPhotoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Admin - add a gallery photo
+ */
+export const useAdminCreateGalleryPhoto = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateGalleryPhoto>>,
+    TError,
+    { data: BodyType<GalleryPhotoInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateGalleryPhoto>>,
+  TError,
+  { data: BodyType<GalleryPhotoInput> },
+  TContext
+> => {
+  return useMutation(getAdminCreateGalleryPhotoMutationOptions(options));
+};
+
+/**
+ * @summary Admin - update a gallery photo
+ */
+export const getAdminUpdateGalleryPhotoUrl = (id: number) => {
+  return `/api/admin/gallery/${id}`;
+};
+
+export const adminUpdateGalleryPhoto = async (
+  id: number,
+  galleryPhotoInput: GalleryPhotoInput,
+  options?: RequestInit,
+): Promise<GalleryPhoto> => {
+  return customFetch<GalleryPhoto>(getAdminUpdateGalleryPhotoUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(galleryPhotoInput),
+  });
+};
+
+export const getAdminUpdateGalleryPhotoMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateGalleryPhoto>>,
+    TError,
+    { id: number; data: BodyType<GalleryPhotoInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateGalleryPhoto>>,
+  TError,
+  { id: number; data: BodyType<GalleryPhotoInput> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateGalleryPhoto"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateGalleryPhoto>>,
+    { id: number; data: BodyType<GalleryPhotoInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateGalleryPhoto(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateGalleryPhotoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateGalleryPhoto>>
+>;
+export type AdminUpdateGalleryPhotoMutationBody = BodyType<GalleryPhotoInput>;
+export type AdminUpdateGalleryPhotoMutationError = ErrorType<void>;
+
+/**
+ * @summary Admin - update a gallery photo
+ */
+export const useAdminUpdateGalleryPhoto = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateGalleryPhoto>>,
+    TError,
+    { id: number; data: BodyType<GalleryPhotoInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateGalleryPhoto>>,
+  TError,
+  { id: number; data: BodyType<GalleryPhotoInput> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateGalleryPhotoMutationOptions(options));
+};
+
+/**
+ * @summary Admin - delete a gallery photo
+ */
+export const getAdminDeleteGalleryPhotoUrl = (id: number) => {
+  return `/api/admin/gallery/${id}`;
+};
+
+export const adminDeleteGalleryPhoto = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getAdminDeleteGalleryPhotoUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getAdminDeleteGalleryPhotoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteGalleryPhoto>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDeleteGalleryPhoto>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["adminDeleteGalleryPhoto"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDeleteGalleryPhoto>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminDeleteGalleryPhoto(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDeleteGalleryPhotoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDeleteGalleryPhoto>>
+>;
+
+export type AdminDeleteGalleryPhotoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Admin - delete a gallery photo
+ */
+export const useAdminDeleteGalleryPhoto = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteGalleryPhoto>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDeleteGalleryPhoto>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getAdminDeleteGalleryPhotoMutationOptions(options));
 };
 
 /**

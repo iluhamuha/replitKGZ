@@ -282,6 +282,93 @@ paths:
               schema:
                 $ref: "#/components/schemas/Booking"
 
+  /gallery:
+    get:
+      operationId: listGalleryPhotos
+      tags: [gallery]
+      summary: List all gallery photos (public)
+      responses:
+        "200":
+          description: Gallery photos ordered by sortOrder
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GalleryPhoto"
+
+  /admin/gallery:
+    get:
+      operationId: adminListGalleryPhotos
+      tags: [gallery]
+      summary: Admin - list all gallery photos
+      responses:
+        "200":
+          description: All gallery photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GalleryPhoto"
+    post:
+      operationId: adminCreateGalleryPhoto
+      tags: [gallery]
+      summary: Admin - add a gallery photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GalleryPhotoInput"
+      responses:
+        "201":
+          description: Created photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryPhoto"
+
+  /admin/gallery/{id}:
+    patch:
+      operationId: adminUpdateGalleryPhoto
+      tags: [gallery]
+      summary: Admin - update a gallery photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GalleryPhotoInput"
+      responses:
+        "200":
+          description: Updated photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryPhoto"
+        "404":
+          description: Not found
+    delete:
+      operationId: adminDeleteGalleryPhoto
+      tags: [gallery]
+      summary: Admin - delete a gallery photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /admin/stats:
     get:
       operationId: getAdminStats
@@ -455,6 +542,34 @@ components:
           type: string
         customerEmail:
           type: string
+
+    GalleryPhoto:
+      type: object
+      required: [id, imageUrl, caption, location, sortOrder]
+      properties:
+        id:
+          type: integer
+        imageUrl:
+          type: string
+        caption:
+          type: string
+        location:
+          type: string
+        sortOrder:
+          type: integer
+
+    GalleryPhotoInput:
+      type: object
+      required: [imageUrl, caption]
+      properties:
+        imageUrl:
+          type: string
+        caption:
+          type: string
+        location:
+          type: string
+        sortOrder:
+          type: integer
 
     AdminStats:
       type: object

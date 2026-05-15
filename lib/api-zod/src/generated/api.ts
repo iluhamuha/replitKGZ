@@ -273,6 +273,73 @@ export const AdminUpdateBookingStatusResponse = zod.object({
 });
 
 /**
+ * @summary List all gallery photos (public)
+ */
+export const ListGalleryPhotosResponseItem = zod.object({
+  id: zod.number(),
+  imageUrl: zod.string(),
+  caption: zod.string(),
+  location: zod.string(),
+  sortOrder: zod.number(),
+});
+export const ListGalleryPhotosResponse = zod.array(
+  ListGalleryPhotosResponseItem,
+);
+
+/**
+ * @summary Admin - list all gallery photos
+ */
+export const AdminListGalleryPhotosResponseItem = zod.object({
+  id: zod.number(),
+  imageUrl: zod.string(),
+  caption: zod.string(),
+  location: zod.string(),
+  sortOrder: zod.number(),
+});
+export const AdminListGalleryPhotosResponse = zod.array(
+  AdminListGalleryPhotosResponseItem,
+);
+
+/**
+ * @summary Admin - add a gallery photo
+ */
+export const AdminCreateGalleryPhotoBody = zod.object({
+  imageUrl: zod.string(),
+  caption: zod.string(),
+  location: zod.string().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Admin - update a gallery photo
+ */
+export const AdminUpdateGalleryPhotoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminUpdateGalleryPhotoBody = zod.object({
+  imageUrl: zod.string(),
+  caption: zod.string(),
+  location: zod.string().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const AdminUpdateGalleryPhotoResponse = zod.object({
+  id: zod.number(),
+  imageUrl: zod.string(),
+  caption: zod.string(),
+  location: zod.string(),
+  sortOrder: zod.number(),
+});
+
+/**
+ * @summary Admin - delete a gallery photo
+ */
+export const AdminDeleteGalleryPhotoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary Admin dashboard stats
  */
 export const GetAdminStatsResponse = zod.object({

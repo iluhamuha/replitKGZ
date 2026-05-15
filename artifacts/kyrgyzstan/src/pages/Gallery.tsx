@@ -1,98 +1,22 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-
-const photos = [
-  {
-    src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=75",
-    caption: "Tian Shan — Nebeské hory",
-    location: "Kyrgyzstán",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=600&q=75",
-    caption: "Jezero Issyk-Kul za svítání",
-    location: "Oblast Issyk-Kul",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1563906267088-b029e7101114?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1563906267088-b029e7101114?auto=format&fit=crop&w=600&q=75",
-    caption: "Pamírská dálnice",
-    location: "Oblast Osh",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=600&q=75",
-    caption: "Jurty na pastvině Song-Köl",
-    location: "Centrální Kyrgyzstán",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=75",
-    caption: "Horský průsmyk",
-    location: "Tian Shan",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?auto=format&fit=crop&w=600&q=75",
-    caption: "Vrcholy Tian Shan při východu slunce",
-    location: "Severní Kyrgyzstán",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=75",
-    caption: "Noční obloha nad horami",
-    location: "Kyrgyzstán",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=75",
-    caption: "Ranní mlha v údolí",
-    location: "Oblast Naryn",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=600&q=75",
-    caption: "Alpské louky Kyrgyzstánu",
-    location: "Centrální Kyrgyzstán",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?auto=format&fit=crop&w=600&q=75",
-    caption: "Lesnatá horská krajina",
-    location: "Oblast Čuj",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1493558103817-58b2924bce98?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1493558103817-58b2924bce98?auto=format&fit=crop&w=600&q=75",
-    caption: "Zamrzlé horské jezero",
-    location: "Tian Shan",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=1200&q=85",
-    thumb: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=600&q=75",
-    caption: "Vodopád v horském údolí",
-    location: "Oblast Karakol",
-  },
-];
+import { useListGalleryPhotos } from "@workspace/api-client-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Gallery() {
+  const { data: photos, isLoading } = useListGalleryPhotos();
   const [selected, setSelected] = useState<number | null>(null);
+
+  const list = photos ?? [];
 
   const handlePrev = () => {
     if (selected === null) return;
-    setSelected((selected - 1 + photos.length) % photos.length);
+    setSelected((selected - 1 + list.length) % list.length);
   };
 
   const handleNext = () => {
     if (selected === null) return;
-    setSelected((selected + 1) % photos.length);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowLeft") handlePrev();
-    if (e.key === "ArrowRight") handleNext();
-    if (e.key === "Escape") setSelected(null);
+    setSelected((selected + 1) % list.length);
   };
 
   return (
@@ -113,34 +37,55 @@ export default function Gallery() {
 
       {/* Grid */}
       <section className="container mx-auto px-4 py-12">
-        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-          {photos.map((photo, i) => (
-            <div
-              key={i}
-              className="break-inside-avoid cursor-pointer group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300"
-              onClick={() => setSelected(i)}
-            >
-              <img
-                src={photo.thumb}
-                alt={photo.caption}
-                className="w-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                <p className="text-white font-semibold text-sm leading-tight">{photo.caption}</p>
-                <p className="text-gray-300 text-xs mt-1">{photo.location}</p>
+        {isLoading ? (
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="break-inside-avoid">
+                <Skeleton className={`w-full rounded-lg ${i % 3 === 0 ? 'h-80' : 'h-56'}`} />
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : list.length === 0 ? (
+          <div className="text-center py-24 text-muted-foreground">
+            <p className="text-lg">Galerie je zatím prázdná.</p>
+            <p className="text-sm mt-2">Přidejte fotografie v administraci.</p>
+          </div>
+        ) : (
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+            {list.map((photo, i) => (
+              <div
+                key={photo.id}
+                className="break-inside-avoid cursor-pointer group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300"
+                onClick={() => setSelected(i)}
+              >
+                <img
+                  src={photo.imageUrl}
+                  alt={photo.caption}
+                  className="w-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                  <p className="text-white font-semibold text-sm leading-tight">{photo.caption}</p>
+                  {photo.location && (
+                    <p className="text-gray-300 text-xs mt-1">{photo.location}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Lightbox */}
-      {selected !== null && (
+      {selected !== null && list[selected] && (
         <div
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
           onClick={() => setSelected(null)}
-          onKeyDown={handleKeyDown}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft") handlePrev();
+            if (e.key === "ArrowRight") handleNext();
+            if (e.key === "Escape") setSelected(null);
+          }}
           tabIndex={0}
         >
           <button
@@ -169,13 +114,15 @@ export default function Gallery() {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={photos[selected].src}
-              alt={photos[selected].caption}
+              src={list[selected].imageUrl}
+              alt={list[selected].caption}
               className="max-h-[78vh] max-w-full object-contain rounded-lg shadow-2xl"
             />
             <div className="mt-4 text-center">
-              <p className="text-white font-medium text-lg">{photos[selected].caption}</p>
-              <p className="text-gray-400 text-sm mt-1">{photos[selected].location}</p>
+              <p className="text-white font-medium text-lg">{list[selected].caption}</p>
+              {list[selected].location && (
+                <p className="text-gray-400 text-sm mt-1">{list[selected].location}</p>
+              )}
             </div>
           </div>
         </div>
