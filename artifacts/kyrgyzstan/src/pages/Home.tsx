@@ -6,11 +6,10 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { cs } from "date-fns/locale";
 
 function formatShortDate(iso: string) {
   try {
-    return format(new Date(iso + "T00:00:00"), "d. MMM", { locale: cs });
+    return format(new Date(iso + "T00:00:00"), "d.M.");
   } catch {
     return iso;
   }
