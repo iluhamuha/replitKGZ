@@ -141,7 +141,7 @@ function TripGalleryManager({ tripId, tripName }: { tripId: number; tripName: st
   const deletePhoto = useAdminDeleteGalleryPhoto();
 
   const { uploadFile, isUploading } = useUpload({
-    onSuccess: (response) => {
+    onSuccess: (response: { objectPath: string }) => {
       galleryForm.setValue("imageUrl", `/api/storage${response.objectPath}`, { shouldValidate: true });
       toast({ title: "Obrázek nahrán" });
     },
