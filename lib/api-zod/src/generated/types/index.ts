@@ -26,5 +26,7 @@ export * from "./qrPaymentDetails";
 export * from "./setupPasswordBody";
 export * from "./stripeSessionResult";
 export * from "./trip";
+export * from "./tripDate";
+export * from "./tripDateInput";
 export * from "./tripInput";
 export * from "./tripUpdate";

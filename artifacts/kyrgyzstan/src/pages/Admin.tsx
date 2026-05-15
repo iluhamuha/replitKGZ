@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { 
   useGetAdminStats, 
   useAdminListTrips, 
@@ -11,9 +11,13 @@ import {
   useAdminDeleteGalleryPhoto,
   useGetTripGallery,
   useAdminLogout,
+  useAdminListTripDates,
+  useAdminCreateTripDate,
+  useAdminDeleteTripDate,
   BookingStatusUpdateStatus,
   type Trip,
   type GalleryPhoto,
+  type TripDate,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm, type UseFormReturn } from "react-hook-form";
@@ -38,6 +42,7 @@ import {
   Images,
   ChevronDown,
   ChevronUp,
+  CalendarDays,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,6 +102,23 @@ const galleryPhotoSchema = z.object({
 });
 
 type GalleryPhotoFormValues = z.infer<typeof galleryPhotoSchema>;
+
+function CollapsibleSection({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/70 transition-colors text-sm font-medium"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="flex items-center gap-2">{icon}{label}</span>
+        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+      {open && <div className="p-4">{children}</div>}
+    </div>
+  );
+}
 
 function TripGalleryManager({ tripId, tripName }: { tripId: number; tripName: string }) {
   const { toast } = useToast();
@@ -321,6 +343,208 @@ function TripGalleryManager({ tripId, tripName }: { tripId: number; tripName: st
   );
 }
 
+const tripDateSchema = z.object({
+  departureDate: z.string().min(1, "Povinné pole"),
+  returnDate: z.string().optional().default(""),
+  availableSpots: z.coerce.number().int().min(0).optional(),
+  notes: z.string().optional().default(""),
+});
+
+type TripDateFormValues = z.infer<typeof tripDateSchema>;
+
+function TripDatesManager({ tripId, tripName }: { tripId: number; tripName: string }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const { data: dates, isLoading } = useAdminListTripDates(tripId);
+  const createDate = useAdminCreateTripDate();
+  const deleteDate = useAdminDeleteTripDate();
+
+  const dateForm = useForm<TripDateFormValues>({
+    resolver: zodResolver(tripDateSchema),
+    defaultValues: { departureDate: "", returnDate: "", notes: "" },
+  });
+
+  const invalidateDates = () => {
+    queryClient.invalidateQueries({ queryKey: [`/api/admin/trips/${tripId}/dates`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/trips/${tripId}/dates`] });
+  };
+
+  const onSubmit = (data: TripDateFormValues) => {
+    createDate.mutate(
+      {
+        id: tripId,
+        data: {
+          departureDate: data.departureDate,
+          returnDate: data.returnDate || undefined,
+          availableSpots: data.availableSpots ?? undefined,
+          notes: data.notes || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          invalidateDates();
+          setIsOpen(false);
+          dateForm.reset({ departureDate: "", returnDate: "", notes: "" });
+          toast({ title: "Termín přidán" });
+        },
+        onError: () => toast({ title: "Chyba při přidávání termínu", variant: "destructive" }),
+      }
+    );
+  };
+
+  const handleDelete = (id: number) => {
+    if (!confirm("Opravdu smazat tento termín?")) return;
+    deleteDate.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          invalidateDates();
+          toast({ title: "Termín smazán" });
+        },
+      }
+    );
+  };
+
+  const formatCzechDate = (iso: string) => {
+    try {
+      return format(new Date(iso + "T00:00:00"), "d. M. yyyy", { locale: cs });
+    } catch {
+      return iso;
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+          <CalendarDays className="h-4 w-4" />
+          Termíny odjezdu
+          {dates && dates.length > 0 && (
+            <Badge variant="secondary" className="text-xs">{dates.length}</Badge>
+          )}
+        </h4>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline">
+              <Plus className="h-3 w-3 mr-1" />
+              Přidat termín
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Nový termín</DialogTitle>
+              <DialogDescription>Termín pro zájezd: <strong>{tripName}</strong></DialogDescription>
+            </DialogHeader>
+            <Form {...dateForm}>
+              <form onSubmit={dateForm.handleSubmit(onSubmit)} className="space-y-4 py-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={dateForm.control}
+                    name="departureDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Datum odjezdu</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={dateForm.control}
+                    name="returnDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Datum návratu <span className="text-muted-foreground text-xs">(volitelné)</span></FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={dateForm.control}
+                  name="availableSpots"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Volná místa <span className="text-muted-foreground text-xs">(volitelné — přepíše výchozí kapacitu)</span></FormLabel>
+                      <FormControl>
+                        <Input type="number" min={0} placeholder="Výchozí dle zájezdu" {...field} value={field.value ?? ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={dateForm.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Poznámka <span className="text-muted-foreground text-xs">(volitelné)</span></FormLabel>
+                      <FormControl>
+                        <Input placeholder="Např. Možno prodloužení o 3 dny" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Zrušit</Button>
+                  <Button type="submit" disabled={createDate.isPending}>Přidat termín</Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2].map(i => <Skeleton key={i} className="h-10 rounded-md" />)}
+        </div>
+      ) : !dates || dates.length === 0 ? (
+        <div className="text-center py-5 text-muted-foreground border-2 border-dashed rounded-lg">
+          <CalendarDays className="h-7 w-7 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Žádné termíny. Přidejte první.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {dates.map((d: TripDate) => (
+            <div key={d.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-muted/30">
+              <div className="flex flex-col gap-0.5">
+                <span className="font-medium">
+                  {formatCzechDate(d.departureDate)}
+                  {d.returnDate ? ` – ${formatCzechDate(d.returnDate)}` : ""}
+                </span>
+                {(d.notes || d.availableSpots !== null) && (
+                  <span className="text-xs text-muted-foreground">
+                    {d.availableSpots !== null && `${d.availableSpots} míst`}
+                    {d.availableSpots !== null && d.notes && " · "}
+                    {d.notes}
+                  </span>
+                )}
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                onClick={() => handleDelete(d.id)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TripEditDialog({ 
   trip, 
   open, 
@@ -336,8 +560,6 @@ function TripEditDialog({
   form: UseFormReturn<TripFormValues>;
   onTripSubmit: (data: TripFormValues) => void;
 }) {
-  const [showGallery, setShowGallery] = useState(false);
-
   return (
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
@@ -507,24 +729,14 @@ function TripEditDialog({
           </div>
 
           {editingTripId && trip && (
-            <div className="border rounded-lg overflow-hidden">
-              <button
-                type="button"
-                className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/70 transition-colors text-sm font-medium"
-                onClick={() => setShowGallery((v) => !v)}
-              >
-                <span className="flex items-center gap-2">
-                  <Images className="h-4 w-4" />
-                  Fotografie zájezdu
-                </span>
-                {showGallery ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
-              {showGallery && (
-                <div className="p-4">
-                  <TripGalleryManager tripId={editingTripId} tripName={trip.name} />
-                </div>
-              )}
-            </div>
+            <>
+              <CollapsibleSection icon={<CalendarDays className="h-4 w-4" />} label="Termíny odjezdu">
+                <TripDatesManager tripId={editingTripId} tripName={trip.name} />
+              </CollapsibleSection>
+              <CollapsibleSection icon={<Images className="h-4 w-4" />} label="Fotografie zájezdu">
+                <TripGalleryManager tripId={editingTripId} tripName={trip.name} />
+              </CollapsibleSection>
+            </>
           )}
           
           <div className="flex justify-end gap-2 pt-4">

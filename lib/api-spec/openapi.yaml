@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: trips
     description: Trip listings
+  - name: dates
+    description: Trip dates (termíny)
   - name: bookings
     description: Booking management
   - name: payments
@@ -66,6 +68,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Trip"
+        "404":
+          description: Trip not found
+
+  /trips/{id}/dates:
+    get:
+      operationId: getTripDates
+      tags: [dates]
+      summary: Get departure dates for a trip (public)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of dates ordered by departure_date
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripDate"
         "404":
           description: Trip not found
 
@@ -266,6 +291,69 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /admin/trips/{id}/dates:
+    get:
+      operationId: adminListTripDates
+      tags: [dates]
+      summary: Admin - list dates for a trip
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Dates for the trip
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripDate"
+    post:
+      operationId: adminCreateTripDate
+      tags: [dates]
+      summary: Admin - add a departure date to a trip
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripDateInput"
+      responses:
+        "201":
+          description: Created date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDate"
+        "404":
+          description: Trip not found
+
+  /admin/dates/{id}:
+    delete:
+      operationId: adminDeleteTripDate
+      tags: [dates]
+      summary: Admin - delete a departure date
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
 
   /admin/bookings:
     get:
@@ -678,6 +766,40 @@ components:
       required: [password]
       properties:
         password:
+          type: string
+
+    TripDate:
+      type: object
+      required: [id, tripId, departureDate]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        departureDate:
+          type: string
+          description: ISO date YYYY-MM-DD
+        returnDate:
+          type: ["string", "null"]
+          description: ISO date YYYY-MM-DD
+        availableSpots:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+
+    TripDateInput:
+      type: object
+      required: [departureDate]
+      properties:
+        departureDate:
+          type: string
+          description: ISO date YYYY-MM-DD
+        returnDate:
+          type: string
+          description: ISO date YYYY-MM-DD
+        availableSpots:
+          type: integer
+        notes:
           type: string
 
     GalleryPhoto:

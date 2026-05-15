@@ -9,11 +9,15 @@ import {
   useCreateBooking,
   useCreateStripeSession,
   useGetTripGallery,
+  useGetTripDates,
   BookingInputBookingType,
-  BookingInputPaymentMethod
+  BookingInputPaymentMethod,
+  type TripDate,
 } from "@workspace/api-client-react";
-import { MapPin, Calendar, Users, CreditCard, QrCode, Mountain, ArrowLeft, CheckCircle2, Check, X, Images } from "lucide-react";
+import { MapPin, Calendar, Users, CreditCard, QrCode, Mountain, ArrowLeft, CheckCircle2, Check, X, Images, CalendarDays } from "lucide-react";
 import { Link } from "wouter";
+import { format } from "date-fns";
+import { cs } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +38,92 @@ const bookingSchema = z.object({
 });
 
 type BookingFormValues = z.infer<typeof bookingSchema>;
+
+function formatCzechDate(iso: string) {
+  try {
+    return format(new Date(iso + "T00:00:00"), "d. MMMM yyyy", { locale: cs });
+  } catch {
+    return iso;
+  }
+}
+
+function TripDatesSection({ tripId, tripDays }: { tripId: number; tripDays: number }) {
+  const { data: dates, isLoading } = useGetTripDates(tripId);
+
+  if (isLoading) {
+    return (
+      <Card className="border-border/50 shadow-sm">
+        <CardContent className="p-8">
+          <Skeleton className="h-6 w-48 mb-4" />
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const list: TripDate[] = dates ?? [];
+
+  return (
+    <Card className="border-border/50 shadow-sm">
+      <CardContent className="p-8">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <CalendarDays className="h-6 w-6 text-primary" />
+          Termíny odjezdu
+        </h2>
+        {list.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <CalendarDays className="h-10 w-10 mx-auto mb-3 opacity-20" />
+            <p className="text-base">Termíny budou brzy zveřejněny.</p>
+            <p className="text-sm mt-1">Pro více informací nás kontaktujte.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {list.map((d) => (
+              <div
+                key={d.id}
+                className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 px-5 py-4 hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex flex-col items-center justify-center rounded-lg bg-primary/10 text-primary px-3 py-2 min-w-[64px] text-center shrink-0">
+                    <CalendarDays className="h-5 w-5 mb-0.5" />
+                    <span className="text-xs font-medium leading-tight">odjezd</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-base">
+                      {formatCzechDate(d.departureDate)}
+                      {d.returnDate && (
+                        <span className="text-muted-foreground font-normal"> – {formatCzechDate(d.returnDate)}</span>
+                      )}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3 mt-1">
+                      {!d.returnDate && (
+                        <span className="text-sm text-muted-foreground">{tripDays} dní</span>
+                      )}
+                      {d.availableSpots !== null && d.availableSpots !== undefined && (
+                        <span className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Users className="h-3.5 w-3.5" />
+                          {d.availableSpots} volných míst
+                        </span>
+                      )}
+                      {d.notes && (
+                        <span className="text-sm text-muted-foreground italic">{d.notes}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <Badge variant="outline" className="shrink-0 text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30">
+                  Dostupné
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 function TripGallery({ tripId }: { tripId: number }) {
   const { data: photos, isLoading } = useGetTripGallery(tripId);
@@ -397,6 +487,9 @@ export default function TripDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Departure Dates */}
+            <TripDatesSection tripId={trip.id} tripDays={trip.days} />
 
             {/* Trip Photo Gallery */}
             <TripGallery tripId={trip.id} />

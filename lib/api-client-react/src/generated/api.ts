@@ -31,6 +31,8 @@ import type {
   SetupPasswordBody,
   StripeSessionResult,
   Trip,
+  TripDate,
+  TripDateInput,
   TripInput,
   TripUpdate,
 } from "./api.schemas";
@@ -253,6 +255,93 @@ export function useGetTrip<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetTripQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get departure dates for a trip (public)
+ */
+export const getGetTripDatesUrl = (id: number) => {
+  return `/api/trips/${id}/dates`;
+};
+
+export const getTripDates = async (
+  id: number,
+  options?: RequestInit,
+): Promise<TripDate[]> => {
+  return customFetch<TripDate[]>(getGetTripDatesUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTripDatesQueryKey = (id: number) => {
+  return [`/api/trips/${id}/dates`] as const;
+};
+
+export const getGetTripDatesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTripDates>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTripDates>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTripDatesQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTripDates>>> = ({
+    signal,
+  }) => getTripDates(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTripDates>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTripDatesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTripDates>>
+>;
+export type GetTripDatesQueryError = ErrorType<void>;
+
+/**
+ * @summary Get departure dates for a trip (public)
+ */
+
+export function useGetTripDates<
+  TData = Awaited<ReturnType<typeof getTripDates>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTripDates>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTripDatesQueryOptions(id, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -1102,6 +1191,264 @@ export const useAdminDeleteTrip = <
   TContext
 > => {
   return useMutation(getAdminDeleteTripMutationOptions(options));
+};
+
+/**
+ * @summary Admin - list dates for a trip
+ */
+export const getAdminListTripDatesUrl = (id: number) => {
+  return `/api/admin/trips/${id}/dates`;
+};
+
+export const adminListTripDates = async (
+  id: number,
+  options?: RequestInit,
+): Promise<TripDate[]> => {
+  return customFetch<TripDate[]>(getAdminListTripDatesUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminListTripDatesQueryKey = (id: number) => {
+  return [`/api/admin/trips/${id}/dates`] as const;
+};
+
+export const getAdminListTripDatesQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListTripDates>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminListTripDates>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminListTripDatesQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListTripDates>>
+  > = ({ signal }) => adminListTripDates(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListTripDates>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListTripDatesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListTripDates>>
+>;
+export type AdminListTripDatesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Admin - list dates for a trip
+ */
+
+export function useAdminListTripDates<
+  TData = Awaited<ReturnType<typeof adminListTripDates>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminListTripDates>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListTripDatesQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Admin - add a departure date to a trip
+ */
+export const getAdminCreateTripDateUrl = (id: number) => {
+  return `/api/admin/trips/${id}/dates`;
+};
+
+export const adminCreateTripDate = async (
+  id: number,
+  tripDateInput: TripDateInput,
+  options?: RequestInit,
+): Promise<TripDate> => {
+  return customFetch<TripDate>(getAdminCreateTripDateUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(tripDateInput),
+  });
+};
+
+export const getAdminCreateTripDateMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateTripDate>>,
+    TError,
+    { id: number; data: BodyType<TripDateInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateTripDate>>,
+  TError,
+  { id: number; data: BodyType<TripDateInput> },
+  TContext
+> => {
+  const mutationKey = ["adminCreateTripDate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateTripDate>>,
+    { id: number; data: BodyType<TripDateInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminCreateTripDate(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateTripDateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateTripDate>>
+>;
+export type AdminCreateTripDateMutationBody = BodyType<TripDateInput>;
+export type AdminCreateTripDateMutationError = ErrorType<void>;
+
+/**
+ * @summary Admin - add a departure date to a trip
+ */
+export const useAdminCreateTripDate = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateTripDate>>,
+    TError,
+    { id: number; data: BodyType<TripDateInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateTripDate>>,
+  TError,
+  { id: number; data: BodyType<TripDateInput> },
+  TContext
+> => {
+  return useMutation(getAdminCreateTripDateMutationOptions(options));
+};
+
+/**
+ * @summary Admin - delete a departure date
+ */
+export const getAdminDeleteTripDateUrl = (id: number) => {
+  return `/api/admin/dates/${id}`;
+};
+
+export const adminDeleteTripDate = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getAdminDeleteTripDateUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getAdminDeleteTripDateMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteTripDate>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDeleteTripDate>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["adminDeleteTripDate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDeleteTripDate>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminDeleteTripDate(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDeleteTripDateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDeleteTripDate>>
+>;
+
+export type AdminDeleteTripDateMutationError = ErrorType<void>;
+
+/**
+ * @summary Admin - delete a departure date
+ */
+export const useAdminDeleteTripDate = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteTripDate>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDeleteTripDate>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getAdminDeleteTripDateMutationOptions(options));
 };
 
 /**

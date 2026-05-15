@@ -166,6 +166,31 @@ export interface SetupPasswordBody {
   password: string;
 }
 
+export interface TripDate {
+  id: number;
+  tripId: number;
+  /** ISO date YYYY-MM-DD */
+  departureDate: string;
+  /**
+   * ISO date YYYY-MM-DD
+   * @nullable
+   */
+  returnDate?: string | null;
+  /** @nullable */
+  availableSpots?: number | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface TripDateInput {
+  /** ISO date YYYY-MM-DD */
+  departureDate: string;
+  /** ISO date YYYY-MM-DD */
+  returnDate?: string;
+  availableSpots?: number;
+  notes?: string;
+}
+
 export interface GalleryPhoto {
   id: number;
   tripId: number;

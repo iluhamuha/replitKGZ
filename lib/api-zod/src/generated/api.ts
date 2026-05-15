@@ -56,6 +56,23 @@ export const GetTripResponse = zod.object({
 });
 
 /**
+ * @summary Get departure dates for a trip (public)
+ */
+export const GetTripDatesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetTripDatesResponseItem = zod.object({
+  id: zod.number(),
+  tripId: zod.number(),
+  departureDate: zod.string().describe("ISO date YYYY-MM-DD"),
+  returnDate: zod.string().nullish().describe("ISO date YYYY-MM-DD"),
+  availableSpots: zod.number().nullish(),
+  notes: zod.string().nullish(),
+});
+export const GetTripDatesResponse = zod.array(GetTripDatesResponseItem);
+
+/**
  * @summary Get photos for a specific trip (public)
  */
 export const GetTripGalleryParams = zod.object({
@@ -228,6 +245,46 @@ export const AdminUpdateTripResponse = zod.object({
  * @summary Admin - delete a trip
  */
 export const AdminDeleteTripParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Admin - list dates for a trip
+ */
+export const AdminListTripDatesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminListTripDatesResponseItem = zod.object({
+  id: zod.number(),
+  tripId: zod.number(),
+  departureDate: zod.string().describe("ISO date YYYY-MM-DD"),
+  returnDate: zod.string().nullish().describe("ISO date YYYY-MM-DD"),
+  availableSpots: zod.number().nullish(),
+  notes: zod.string().nullish(),
+});
+export const AdminListTripDatesResponse = zod.array(
+  AdminListTripDatesResponseItem,
+);
+
+/**
+ * @summary Admin - add a departure date to a trip
+ */
+export const AdminCreateTripDateParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminCreateTripDateBody = zod.object({
+  departureDate: zod.string().describe("ISO date YYYY-MM-DD"),
+  returnDate: zod.string().optional().describe("ISO date YYYY-MM-DD"),
+  availableSpots: zod.number().optional(),
+  notes: zod.string().optional(),
+});
+
+/**
+ * @summary Admin - delete a departure date
+ */
+export const AdminDeleteTripDateParams = zod.object({
   id: zod.coerce.number(),
 });
 
