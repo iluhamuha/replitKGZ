@@ -1,9 +1,11 @@
 import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { tripsTable } from "./trips";
 
 export const galleryPhotosTable = pgTable("gallery_photos", {
   id: serial("id").primaryKey(),
+  tripId: integer("trip_id").notNull().references(() => tripsTable.id, { onDelete: "cascade" }),
   imageUrl: text("image_url").notNull(),
   caption: text("caption").notNull(),
   location: text("location").notNull().default(""),

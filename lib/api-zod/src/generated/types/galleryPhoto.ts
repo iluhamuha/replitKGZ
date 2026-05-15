@@ -8,6 +8,8 @@
 
 export interface GalleryPhoto {
   id: number;
+  tripId: number;
+  tripName?: string;
   imageUrl: string;
   caption: string;
   location: string;

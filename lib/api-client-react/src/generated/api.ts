@@ -262,6 +262,93 @@ export function useGetTrip<
 }
 
 /**
+ * @summary Get photos for a specific trip (public)
+ */
+export const getGetTripGalleryUrl = (id: number) => {
+  return `/api/trips/${id}/gallery`;
+};
+
+export const getTripGallery = async (
+  id: number,
+  options?: RequestInit,
+): Promise<GalleryPhoto[]> => {
+  return customFetch<GalleryPhoto[]>(getGetTripGalleryUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTripGalleryQueryKey = (id: number) => {
+  return [`/api/trips/${id}/gallery`] as const;
+};
+
+export const getGetTripGalleryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTripGallery>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTripGallery>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTripGalleryQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTripGallery>>> = ({
+    signal,
+  }) => getTripGallery(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTripGallery>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTripGalleryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTripGallery>>
+>;
+export type GetTripGalleryQueryError = ErrorType<void>;
+
+/**
+ * @summary Get photos for a specific trip (public)
+ */
+
+export function useGetTripGallery<
+  TData = Awaited<ReturnType<typeof getTripGallery>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTripGallery>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTripGalleryQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Create a new booking
  */
 export const getCreateBookingUrl = (id: number) => {

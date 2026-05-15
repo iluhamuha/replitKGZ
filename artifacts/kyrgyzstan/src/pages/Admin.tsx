@@ -6,15 +6,17 @@ import {
   useAdminUpdateTrip,
   useAdminCreateTrip,
   useAdminUpdateBookingStatus,
-  useAdminListGalleryPhotos,
   useAdminCreateGalleryPhoto,
   useAdminUpdateGalleryPhoto,
   useAdminDeleteGalleryPhoto,
+  useGetTripGallery,
   useAdminLogout,
-  BookingStatusUpdateStatus
+  BookingStatusUpdateStatus,
+  type Trip,
+  type GalleryPhoto,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
@@ -32,7 +34,10 @@ import {
   X,
   Trash2,
   Image,
-  LogOut
+  LogOut,
+  Images,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,14 +45,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  Body,
-  Cell,
-  Head,
-  Header,
-  Row,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -101,26 +98,17 @@ const galleryPhotoSchema = z.object({
 
 type GalleryPhotoFormValues = z.infer<typeof galleryPhotoSchema>;
 
-export default function Admin() {
+function TripGalleryManager({ tripId, tripName }: { tripId: number; tripName: string }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isTripDialogOpen, setIsTripDialogOpen] = useState(false);
-  const [editingTripId, setEditingTripId] = useState<number | null>(null);
   const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const [editingPhotoId, setEditingPhotoId] = useState<number | null>(null);
 
-  const { data: stats, isLoading: isLoadingStats } = useGetAdminStats();
-  const { data: trips, isLoading: isLoadingTrips } = useAdminListTrips();
-  const { data: bookings, isLoading: isLoadingBookings } = useAdminListBookings();
-  const { data: galleryPhotos, isLoading: isLoadingGallery } = useAdminListGalleryPhotos();
+  const { data: photos, isLoading } = useGetTripGallery(tripId);
 
-  const createTrip = useAdminCreateTrip();
-  const updateTrip = useAdminUpdateTrip();
-  const updateBookingStatus = useAdminUpdateBookingStatus();
   const createPhoto = useAdminCreateGalleryPhoto();
   const updatePhoto = useAdminUpdateGalleryPhoto();
   const deletePhoto = useAdminDeleteGalleryPhoto();
-  const logout = useAdminLogout();
 
   const galleryForm = useForm<GalleryPhotoFormValues>({
     resolver: zodResolver(galleryPhotoSchema),
@@ -129,26 +117,45 @@ export default function Admin() {
 
   const handleOpenCreatePhotoDialog = () => {
     setEditingPhotoId(null);
-    galleryForm.reset({ imageUrl: "", caption: "", location: "", sortOrder: (galleryPhotos?.length ?? 0) + 1 });
+    galleryForm.reset({ imageUrl: "", caption: "", location: "", sortOrder: (photos?.length ?? 0) + 1 });
     setIsPhotoDialogOpen(true);
   };
 
-  const handleOpenEditPhotoDialog = (photo: any) => {
+  const handleOpenEditPhotoDialog = (photo: GalleryPhoto) => {
     setEditingPhotoId(photo.id);
     galleryForm.reset({ imageUrl: photo.imageUrl, caption: photo.caption, location: photo.location ?? "", sortOrder: photo.sortOrder });
     setIsPhotoDialogOpen(true);
   };
 
+  const invalidateGallery = () => {
+    queryClient.invalidateQueries({ queryKey: [`/api/trips/${tripId}/gallery`] });
+    queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
+  };
+
   const onPhotoSubmit = (data: GalleryPhotoFormValues) => {
-    const invalidate = () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
-      setIsPhotoDialogOpen(false);
-    };
     if (editingPhotoId) {
-      updatePhoto.mutate({ id: editingPhotoId, data }, { onSuccess: () => { invalidate(); toast({ title: "Fotografie upravena" }); } });
+      updatePhoto.mutate(
+        { id: editingPhotoId, data: { tripId, ...data } },
+        {
+          onSuccess: () => {
+            invalidateGallery();
+            setIsPhotoDialogOpen(false);
+            toast({ title: "Fotografie upravena" });
+          },
+        }
+      );
     } else {
-      createPhoto.mutate({ data }, { onSuccess: () => { invalidate(); toast({ title: "Fotografie přidána" }); } });
+      createPhoto.mutate(
+        { data: { tripId, ...data } },
+        {
+          onSuccess: () => {
+            invalidateGallery();
+            setIsPhotoDialogOpen(false);
+            toast({ title: "Fotografie přidána" });
+          },
+        }
+      );
     }
   };
 
@@ -156,12 +163,399 @@ export default function Admin() {
     if (!confirm("Opravdu smazat tuto fotografii?")) return;
     deletePhoto.mutate({ id }, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
+        invalidateGallery();
         toast({ title: "Fotografie smazána" });
       },
     });
   };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+          <Images className="h-4 w-4" />
+          Fotografie zájezdu
+          {photos && photos.length > 0 && (
+            <Badge variant="secondary" className="text-xs">{photos.length}</Badge>
+          )}
+        </h4>
+        <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" onClick={handleOpenCreatePhotoDialog}>
+              <Plus className="h-3 w-3 mr-1" />
+              Přidat foto
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editingPhotoId ? "Upravit fotografii" : "Nová fotografie"}</DialogTitle>
+              <DialogDescription>
+                Fotografie pro zájezd: <strong>{tripName}</strong>
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...galleryForm}>
+              <form onSubmit={galleryForm.handleSubmit(onPhotoSubmit)} className="space-y-4 py-2">
+                <FormField
+                  control={galleryForm.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>URL obrázku</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {galleryForm.watch("imageUrl") && (
+                  <div className="rounded-md overflow-hidden border h-40">
+                    <img
+                      src={galleryForm.watch("imageUrl")}
+                      alt="Náhled"
+                      className="w-full h-full object-cover"
+                      onError={(e) => (e.currentTarget.style.display = "none")}
+                    />
+                  </div>
+                )}
+                <FormField
+                  control={galleryForm.control}
+                  name="caption"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Popis fotografie</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Jezero Issyk-Kul za svítání" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={galleryForm.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lokalita</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Oblast Issyk-Kul" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={galleryForm.control}
+                    name="sortOrder"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pořadí</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setIsPhotoDialogOpen(false)}>
+                    Zrušit
+                  </Button>
+                  <Button type="submit">
+                    {editingPhotoId ? "Uložit změny" : "Přidat fotografii"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {isLoading ? (
+        <div className="grid grid-cols-3 gap-2">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-20 rounded-md" />)}
+        </div>
+      ) : !photos || photos.length === 0 ? (
+        <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg">
+          <Image className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Žádné fotografie. Přidejte první.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {photos.map((photo) => (
+            <div key={photo.id} className="group relative rounded-md overflow-hidden border bg-muted aspect-[4/3]">
+              <img
+                src={photo.imageUrl}
+                alt={photo.caption}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                <div className="flex justify-end gap-1">
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="h-6 w-6"
+                    onClick={() => handleOpenEditPhotoDialog(photo)}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="h-6 w-6"
+                    onClick={() => handleDeletePhoto(photo.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+                <p className="text-white text-xs line-clamp-2 leading-tight">{photo.caption}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TripEditDialog({ 
+  trip, 
+  open, 
+  onOpenChange,
+  editingTripId,
+  form,
+  onTripSubmit
+}: {
+  trip?: Trip | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  editingTripId: number | null;
+  form: UseFormReturn<TripFormValues>;
+  onTripSubmit: (data: TripFormValues) => void;
+}) {
+  const [showGallery, setShowGallery] = useState(false);
+
+  return (
+    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{editingTripId ? 'Upravit zájezd' : 'Nový zájezd'}</DialogTitle>
+        <DialogDescription>
+          Vyplňte informace o zájezdu pro zobrazení na webu.
+        </DialogDescription>
+      </DialogHeader>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onTripSubmit)} className="space-y-4 py-4">
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Název zájezdu</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="destination"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lokalita / Cíl</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="days"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Počet dní</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="priceCzk"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cena (Kč)</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="availableSpots"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Kapacita</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>URL obrázku</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Popis</FormLabel>
+                  <FormControl>
+                    <Textarea className="min-h-[100px]" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="active"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 col-span-2 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Aktivní na webu</FormLabel>
+                    <div className="text-sm text-muted-foreground">
+                      Zájezd bude zobrazen klientům.
+                    </div>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="priceIncludes"
+              render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Cena zahrnuje</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      className="min-h-[100px]"
+                      placeholder={"Jeden řádek = jedna položka. Např.:\nLetenky Praha–Biškek\nUbytování v jurtech\nPrůvodce po celou dobu"}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="priceExcludes"
+              render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Cena nezahrnuje</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      className="min-h-[80px]"
+                      placeholder={"Jeden řádek = jedna položka. Např.:\nCestovní pojištění\nOsobní výdaje"}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {editingTripId && trip && (
+            <div className="border rounded-lg overflow-hidden">
+              <button
+                type="button"
+                className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/70 transition-colors text-sm font-medium"
+                onClick={() => setShowGallery((v) => !v)}
+              >
+                <span className="flex items-center gap-2">
+                  <Images className="h-4 w-4" />
+                  Fotografie zájezdu
+                </span>
+                {showGallery ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              {showGallery && (
+                <div className="p-4">
+                  <TripGalleryManager tripId={editingTripId} tripName={trip.name} />
+                </div>
+              )}
+            </div>
+          )}
+          
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Zrušit
+            </Button>
+            <Button type="submit">
+              {editingTripId ? 'Uložit změny' : 'Vytvořit zájezd'}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </DialogContent>
+  );
+}
+
+export default function Admin() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isTripDialogOpen, setIsTripDialogOpen] = useState(false);
+  const [editingTripId, setEditingTripId] = useState<number | null>(null);
+  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
+
+  const { data: stats, isLoading: isLoadingStats } = useGetAdminStats();
+  const { data: trips, isLoading: isLoadingTrips } = useAdminListTrips();
+  const { data: bookings, isLoading: isLoadingBookings } = useAdminListBookings();
+
+  const createTrip = useAdminCreateTrip();
+  const updateTrip = useAdminUpdateTrip();
+  const updateBookingStatus = useAdminUpdateBookingStatus();
+  const logout = useAdminLogout();
 
   const form = useForm<TripFormValues>({
     resolver: zodResolver(tripSchema),
@@ -181,6 +575,7 @@ export default function Admin() {
 
   const handleOpenCreateDialog = () => {
     setEditingTripId(null);
+    setEditingTrip(null);
     form.reset({
       name: "",
       destination: "",
@@ -198,6 +593,7 @@ export default function Admin() {
 
   const handleOpenEditDialog = (trip: any) => {
     setEditingTripId(trip.id);
+    setEditingTrip(trip);
     form.reset({
       name: trip.name,
       destination: trip.destination,
@@ -354,7 +750,6 @@ export default function Admin() {
         <TabsList>
           <TabsTrigger value="bookings">Rezervace</TabsTrigger>
           <TabsTrigger value="trips">Zájezdy</TabsTrigger>
-          <TabsTrigger value="gallery">Galerie</TabsTrigger>
         </TabsList>
         
         <TabsContent value="bookings" className="space-y-4">
@@ -466,184 +861,14 @@ export default function Admin() {
                     Přidat zájezd
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>{editingTripId ? 'Upravit zájezd' : 'Nový zájezd'}</DialogTitle>
-                    <DialogDescription>
-                      Vyplňte informace o zájezdu pro zobrazení na webu.
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onTripSubmit)} className="space-y-4 py-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="name"
-                          render={({ field }) => (
-                            <FormItem className="col-span-2">
-                              <FormLabel>Název zájezdu</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="destination"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Lokalita / Cíl</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="days"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Počet dní</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="priceCzk"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Cena (Kč)</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="availableSpots"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Kapacita</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="imageUrl"
-                          render={({ field }) => (
-                            <FormItem className="col-span-2">
-                              <FormLabel>URL obrázku</FormLabel>
-                              <FormControl>
-                                <Input placeholder="https://..." {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem className="col-span-2">
-                              <FormLabel>Popis</FormLabel>
-                              <FormControl>
-                                <Textarea className="min-h-[100px]" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="active"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 col-span-2 shadow-sm">
-                              <div className="space-y-0.5">
-                                <FormLabel>Aktivní na webu</FormLabel>
-                                <div className="text-sm text-muted-foreground">
-                                  Zájezd bude zobrazen klientům.
-                                </div>
-                              </div>
-                              <FormControl>
-                                <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="priceIncludes"
-                          render={({ field }) => (
-                            <FormItem className="col-span-2">
-                              <FormLabel>Cena zahrnuje</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  className="min-h-[100px]"
-                                  placeholder={"Jeden řádek = jedna položka. Např.:\nLetenky Praha–Biškek\nUbytování v jurtech\nPrůvodce po celou dobu"}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="priceExcludes"
-                          render={({ field }) => (
-                            <FormItem className="col-span-2">
-                              <FormLabel>Cena nezahrnuje</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  className="min-h-[80px]"
-                                  placeholder={"Jeden řádek = jedna položka. Např.:\nCestovní pojištění\nOsobní výdaje"}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <div className="flex justify-end gap-2 pt-4">
-                        <Button type="button" variant="outline" onClick={() => setIsTripDialogOpen(false)}>
-                          Zrušit
-                        </Button>
-                        <Button type="submit">
-                          {editingTripId ? 'Uložit změny' : 'Vytvořit zájezd'}
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </DialogContent>
+                <TripEditDialog
+                  trip={editingTrip}
+                  open={isTripDialogOpen}
+                  onOpenChange={setIsTripDialogOpen}
+                  editingTripId={editingTripId}
+                  form={form}
+                  onTripSubmit={onTripSubmit}
+                />
               </Dialog>
             </CardHeader>
             <CardContent>
@@ -720,158 +945,6 @@ export default function Admin() {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="gallery" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row justify-between items-center">
-              <CardTitle>Fotografie v galerii</CardTitle>
-              <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={handleOpenCreatePhotoDialog}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Přidat fotografii
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>{editingPhotoId ? "Upravit fotografii" : "Nová fotografie"}</DialogTitle>
-                    <DialogDescription>
-                      Vložte URL obrázku a popis. Pořadí určuje pozici v galerii.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Form {...galleryForm}>
-                    <form onSubmit={galleryForm.handleSubmit(onPhotoSubmit)} className="space-y-4 py-2">
-                      <FormField
-                        control={galleryForm.control}
-                        name="imageUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>URL obrázku</FormLabel>
-                            <FormControl>
-                              <Input placeholder="https://..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      {galleryForm.watch("imageUrl") && (
-                        <div className="rounded-md overflow-hidden border h-40">
-                          <img
-                            src={galleryForm.watch("imageUrl")}
-                            alt="Náhled"
-                            className="w-full h-full object-cover"
-                            onError={(e) => (e.currentTarget.style.display = "none")}
-                          />
-                        </div>
-                      )}
-                      <FormField
-                        control={galleryForm.control}
-                        name="caption"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Popis fotografie</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Jezero Issyk-Kul za svítání" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={galleryForm.control}
-                          name="location"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Lokalita</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Oblast Issyk-Kul" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={galleryForm.control}
-                          name="sortOrder"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Pořadí</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2 pt-2">
-                        <Button type="button" variant="outline" onClick={() => setIsPhotoDialogOpen(false)}>
-                          Zrušit
-                        </Button>
-                        <Button type="submit">
-                          {editingPhotoId ? "Uložit změny" : "Přidat fotografii"}
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent>
-              {isLoadingGallery ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[1,2,3,4].map(i => <Skeleton key={i} className="h-36 rounded-lg" />)}
-                </div>
-              ) : !galleryPhotos || galleryPhotos.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Image className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                  <p>Galerie je prázdná. Přidejte první fotografii.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {galleryPhotos.map((photo) => (
-                    <div key={photo.id} className="group relative rounded-lg overflow-hidden border bg-muted aspect-[4/3]">
-                      <img
-                        src={photo.imageUrl}
-                        alt={photo.caption}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            className="h-7 w-7"
-                            onClick={() => handleOpenEditPhotoDialog(photo)}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="destructive"
-                            className="h-7 w-7"
-                            onClick={() => handleDeletePhoto(photo.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <div>
-                          <p className="text-white text-xs font-medium line-clamp-2 leading-tight">{photo.caption}</p>
-                          {photo.location && (
-                            <p className="text-gray-300 text-xs mt-0.5">{photo.location}</p>
-                          )}
-                          <p className="text-gray-400 text-xs mt-1">Pořadí: {photo.sortOrder}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
             </CardContent>

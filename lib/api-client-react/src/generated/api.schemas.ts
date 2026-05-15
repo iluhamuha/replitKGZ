@@ -168,6 +168,8 @@ export interface SetupPasswordBody {
 
 export interface GalleryPhoto {
   id: number;
+  tripId: number;
+  tripName?: string;
   imageUrl: string;
   caption: string;
   location: string;
@@ -175,6 +177,7 @@ export interface GalleryPhoto {
 }
 
 export interface GalleryPhotoInput {
+  tripId: number;
   imageUrl: string;
   caption: string;
   location?: string;

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { useListGalleryPhotos } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 export default function Gallery() {
   const { data: photos, isLoading } = useListGalleryPhotos();
@@ -48,7 +49,7 @@ export default function Gallery() {
         ) : list.length === 0 ? (
           <div className="text-center py-24 text-muted-foreground">
             <p className="text-lg">Galerie je zatím prázdná.</p>
-            <p className="text-sm mt-2">Přidejte fotografie v administraci.</p>
+            <p className="text-sm mt-2">Přidejte fotografie ke zájezdům v administraci.</p>
           </div>
         ) : (
           <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
@@ -65,6 +66,11 @@ export default function Gallery() {
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                  {photo.tripName && (
+                    <Badge className="w-fit mb-2 bg-primary/80 text-primary-foreground border-none text-xs">
+                      {photo.tripName}
+                    </Badge>
+                  )}
                   <p className="text-white font-semibold text-sm leading-tight">{photo.caption}</p>
                   {photo.location && (
                     <p className="text-gray-300 text-xs mt-1">{photo.location}</p>
@@ -119,6 +125,11 @@ export default function Gallery() {
               className="max-h-[78vh] max-w-full object-contain rounded-lg shadow-2xl"
             />
             <div className="mt-4 text-center">
+              {list[selected].tripName && (
+                <Badge className="mb-2 bg-primary/70 text-primary-foreground border-none text-xs">
+                  {list[selected].tripName}
+                </Badge>
+              )}
               <p className="text-white font-medium text-lg">{list[selected].caption}</p>
               {list[selected].location && (
                 <p className="text-gray-400 text-sm mt-1">{list[selected].location}</p>

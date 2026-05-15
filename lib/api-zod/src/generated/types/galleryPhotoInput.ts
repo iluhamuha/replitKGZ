@@ -7,6 +7,7 @@
  */
 
 export interface GalleryPhotoInput {
+  tripId: number;
   imageUrl: string;
   caption: string;
   location?: string;

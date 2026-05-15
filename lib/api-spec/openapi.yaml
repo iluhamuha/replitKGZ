@@ -16,6 +16,8 @@ tags:
     description: Booking management
   - name: payments
     description: Payment processing
+  - name: gallery
+    description: Photo gallery
 
 paths:
   /healthz:
@@ -64,6 +66,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Trip"
+        "404":
+          description: Trip not found
+
+  /trips/{id}/gallery:
+    get:
+      operationId: getTripGallery
+      tags: [gallery]
+      summary: Get photos for a specific trip (public)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Photos for this trip ordered by sortOrder
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GalleryPhoto"
         "404":
           description: Trip not found
 
@@ -657,10 +682,14 @@ components:
 
     GalleryPhoto:
       type: object
-      required: [id, imageUrl, caption, location, sortOrder]
+      required: [id, tripId, imageUrl, caption, location, sortOrder]
       properties:
         id:
           type: integer
+        tripId:
+          type: integer
+        tripName:
+          type: string
         imageUrl:
           type: string
         caption:
@@ -672,8 +701,10 @@ components:
 
     GalleryPhotoInput:
       type: object
-      required: [imageUrl, caption]
+      required: [tripId, imageUrl, caption]
       properties:
+        tripId:
+          type: integer
         imageUrl:
           type: string
         caption:

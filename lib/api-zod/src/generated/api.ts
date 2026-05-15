@@ -56,6 +56,24 @@ export const GetTripResponse = zod.object({
 });
 
 /**
+ * @summary Get photos for a specific trip (public)
+ */
+export const GetTripGalleryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetTripGalleryResponseItem = zod.object({
+  id: zod.number(),
+  tripId: zod.number(),
+  tripName: zod.string().optional(),
+  imageUrl: zod.string(),
+  caption: zod.string(),
+  location: zod.string(),
+  sortOrder: zod.number(),
+});
+export const GetTripGalleryResponse = zod.array(GetTripGalleryResponseItem);
+
+/**
  * @summary Create a new booking
  */
 export const CreateBookingParams = zod.object({
@@ -335,6 +353,8 @@ export const AdminLogoutResponse = zod.object({
  */
 export const ListGalleryPhotosResponseItem = zod.object({
   id: zod.number(),
+  tripId: zod.number(),
+  tripName: zod.string().optional(),
   imageUrl: zod.string(),
   caption: zod.string(),
   location: zod.string(),
@@ -349,6 +369,8 @@ export const ListGalleryPhotosResponse = zod.array(
  */
 export const AdminListGalleryPhotosResponseItem = zod.object({
   id: zod.number(),
+  tripId: zod.number(),
+  tripName: zod.string().optional(),
   imageUrl: zod.string(),
   caption: zod.string(),
   location: zod.string(),
@@ -362,6 +384,7 @@ export const AdminListGalleryPhotosResponse = zod.array(
  * @summary Admin - add a gallery photo
  */
 export const AdminCreateGalleryPhotoBody = zod.object({
+  tripId: zod.number(),
   imageUrl: zod.string(),
   caption: zod.string(),
   location: zod.string().optional(),
@@ -376,6 +399,7 @@ export const AdminUpdateGalleryPhotoParams = zod.object({
 });
 
 export const AdminUpdateGalleryPhotoBody = zod.object({
+  tripId: zod.number(),
   imageUrl: zod.string(),
   caption: zod.string(),
   location: zod.string().optional(),
@@ -384,6 +408,8 @@ export const AdminUpdateGalleryPhotoBody = zod.object({
 
 export const AdminUpdateGalleryPhotoResponse = zod.object({
   id: zod.number(),
+  tripId: zod.number(),
+  tripName: zod.string().optional(),
   imageUrl: zod.string(),
   caption: zod.string(),
   location: zod.string(),

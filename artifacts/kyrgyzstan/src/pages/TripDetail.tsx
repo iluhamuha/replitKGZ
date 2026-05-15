@@ -8,10 +8,11 @@ import {
   getGetTripQueryKey,
   useCreateBooking,
   useCreateStripeSession,
+  useGetTripGallery,
   BookingInputBookingType,
   BookingInputPaymentMethod
 } from "@workspace/api-client-react";
-import { MapPin, Calendar, Users, CreditCard, QrCode, Mountain, ArrowLeft, CheckCircle2, Check, X } from "lucide-react";
+import { MapPin, Calendar, Users, CreditCard, QrCode, Mountain, ArrowLeft, CheckCircle2, Check, X, Images } from "lucide-react";
 import { Link } from "wouter";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,144 @@ const bookingSchema = z.object({
 });
 
 type BookingFormValues = z.infer<typeof bookingSchema>;
+
+function TripGallery({ tripId }: { tripId: number }) {
+  const { data: photos, isLoading } = useGetTripGallery(tripId);
+  const [selected, setSelected] = useState<number | null>(null);
+
+  const list = photos ?? [];
+
+  const handlePrev = () => {
+    if (selected === null) return;
+    setSelected((selected - 1 + list.length) % list.length);
+  };
+
+  const handleNext = () => {
+    if (selected === null) return;
+    setSelected((selected + 1) % list.length);
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="border-border/50 shadow-sm overflow-hidden">
+        <CardContent className="p-8">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Images className="h-6 w-6 text-primary" />
+            Fotogalerie
+          </h2>
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="break-inside-avoid">
+                <Skeleton className={`w-full rounded-lg ${i % 2 === 0 ? 'h-64' : 'h-48'}`} />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (list.length === 0) {
+    return (
+      <Card className="border-border/50 shadow-sm overflow-hidden">
+        <CardContent className="p-8">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Images className="h-6 w-6 text-primary" />
+            Fotogalerie
+          </h2>
+          <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
+            <Images className="h-12 w-12 mx-auto mb-3 opacity-25" />
+            <p className="text-base">Ke středoasijskému dobrodružství připravujeme fotogalerii.</p>
+            <p className="text-sm mt-1">Brzy zde uvidíte snímky přímo z trasy.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card className="border-border/50 shadow-sm overflow-hidden">
+        <CardContent className="p-8">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Images className="h-6 w-6 text-primary" />
+            Fotogalerie
+          </h2>
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+            {list.map((photo, i) => (
+              <div
+                key={photo.id}
+                className="break-inside-avoid cursor-pointer group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300"
+                onClick={() => setSelected(i)}
+              >
+                <img
+                  src={photo.imageUrl}
+                  alt={photo.caption}
+                  className="w-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                  <p className="text-white font-semibold text-sm leading-tight">{photo.caption}</p>
+                  {photo.location && (
+                    <p className="text-gray-300 text-xs mt-1">{photo.location}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {selected !== null && list[selected] && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          onClick={() => setSelected(null)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft") handlePrev();
+            if (e.key === "ArrowRight") handleNext();
+            if (e.key === "Escape") setSelected(null);
+          }}
+          tabIndex={0}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10 p-2"
+            onClick={() => setSelected(null)}
+          >
+            <X className="h-8 w-8" />
+          </button>
+          <button
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors text-4xl font-light px-4 py-6 select-none z-10"
+            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+          >
+            ‹
+          </button>
+          <button
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors text-4xl font-light px-4 py-6 select-none z-10"
+            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+          >
+            ›
+          </button>
+          <div
+            className="max-w-5xl max-h-[90vh] mx-12 flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={list[selected].imageUrl}
+              alt={list[selected].caption}
+              className="max-h-[78vh] max-w-full object-contain rounded-lg shadow-2xl"
+            />
+            <div className="mt-4 text-center">
+              <p className="text-white font-medium text-lg">{list[selected].caption}</p>
+              {list[selected].location && (
+                <p className="text-gray-400 text-sm mt-1">{list[selected].location}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 export default function TripDetail() {
   const params = useParams();
@@ -79,7 +218,6 @@ export default function TripDetail() {
                 { id: booking.id },
                 {
                   onSuccess: (session) => {
-                    // Redirect to Stripe checkout
                     window.location.href = session.url;
                   },
                   onError: () => {
@@ -259,6 +397,9 @@ export default function TripDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Trip Photo Gallery */}
+            <TripGallery tripId={trip.id} />
           </div>
 
           {/* Booking Form Sidebar */}

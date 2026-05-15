@@ -28,10 +28,13 @@ Czech travel agency website for adventure trips to Kyrgyzstan. Customers browse 
 - `lib/api-spec/openapi.yaml` — API contract (source of truth)
 - `lib/db/src/schema/trips.ts` — Trip model
 - `lib/db/src/schema/bookings.ts` — Booking model
+- `lib/db/src/schema/gallery.ts` — Gallery photo model (trip_id FK)
 - `artifacts/api-server/src/routes/trips.ts` — Trip routes + admin trip routes
 - `artifacts/api-server/src/routes/bookings.ts` — Booking routes + admin booking routes
 - `artifacts/api-server/src/routes/payments.ts` — Stripe checkout, QR payment, Stripe webhook
+- `artifacts/api-server/src/routes/gallery.ts` — Gallery routes (public all-trips + per-trip + admin CRUD)
 - `artifacts/kyrgyzstan/src/` — React frontend
+- `scripts/src/migrate-gallery-trip-id.ts` — Migration script: removes orphaned gallery photos before schema push
 
 ## Architecture decisions
 
@@ -57,6 +60,7 @@ Czech travel agency website for adventure trips to Kyrgyzstan. Customers browse 
 ## Gotchas
 
 - After any OpenAPI spec change, run `pnpm --filter @workspace/api-spec run codegen` before editing routes or frontend
+- Before pushing `gallery_photos.trip_id` NOT NULL constraint to a DB with existing rows, run `pnpm --filter @workspace/scripts run migrate-gallery-trip-id` first to delete orphaned photos
 - Stripe requires `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` env secrets to work
 - To configure your bank account for QR payments, set `BANK_IBAN` and `BANK_RECIPIENT_NAME` env secrets
 - For email confirmations (not yet implemented), add `EMAIL_HOST_USER` and `EMAIL_HOST_PASSWORD`
