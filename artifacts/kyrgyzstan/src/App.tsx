@@ -10,7 +10,7 @@ import Home from "@/pages/Home";
 import TripDetail from "@/pages/TripDetail";
 import QrPayment from "@/pages/QrPayment";
 import Success from "@/pages/Success";
-import Admin from "@/pages/Admin";
+import AdminGuard from "@/pages/AdminGuard";
 import Gallery from "@/pages/Gallery";
 import NotFound from "@/pages/not-found";
 
@@ -33,7 +33,7 @@ function Router() {
           <Route path="/trip/:id" component={TripDetail} />
           <Route path="/payment/qr/:bookingId" component={QrPayment} />
           <Route path="/payment/success" component={Success} />
-          <Route path="/admin" component={Admin} />
+          <Route path="/admin" component={AdminGuard} />
           <Route path="/galerie" component={Gallery} />
           <Route component={NotFound} />
         </Switch>

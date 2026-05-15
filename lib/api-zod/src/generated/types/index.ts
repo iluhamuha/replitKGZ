@@ -7,6 +7,8 @@
  */
 
 export * from "./adminStats";
+export * from "./authResult";
+export * from "./authStatus";
 export * from "./booking";
 export * from "./bookingBookingType";
 export * from "./bookingInput";
@@ -19,7 +21,9 @@ export * from "./bookingStatusUpdateStatus";
 export * from "./galleryPhoto";
 export * from "./galleryPhotoInput";
 export * from "./healthStatus";
+export * from "./loginBody";
 export * from "./qrPaymentDetails";
+export * from "./setupPasswordBody";
 export * from "./stripeSessionResult";
 export * from "./trip";
 export * from "./tripInput";

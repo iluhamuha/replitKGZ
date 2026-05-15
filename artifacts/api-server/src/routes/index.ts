@@ -4,10 +4,12 @@ import tripsRouter from "./trips";
 import bookingsRouter from "./bookings";
 import paymentsRouter, { createWebhookRouter } from "./payments";
 import galleryRouter from "./gallery";
+import authRouter from "./auth";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(authRouter);
 router.use(tripsRouter);
 router.use(bookingsRouter);
 router.use(paymentsRouter);

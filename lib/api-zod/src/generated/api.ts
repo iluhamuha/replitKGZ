@@ -273,6 +273,46 @@ export const AdminUpdateBookingStatusResponse = zod.object({
 });
 
 /**
+ * @summary Get current authentication status
+ */
+export const GetAuthStatusResponse = zod.object({
+  authenticated: zod.boolean(),
+  hasPassword: zod.boolean(),
+});
+
+/**
+ * @summary Set the admin password for the first time
+ */
+export const SetupAdminPasswordBody = zod.object({
+  password: zod.string(),
+});
+
+export const SetupAdminPasswordResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
+ * @summary Login to admin panel
+ */
+export const AdminLoginBody = zod.object({
+  password: zod.string(),
+});
+
+export const AdminLoginResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
+ * @summary Logout from admin panel
+ */
+export const AdminLogoutResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
  * @summary List all gallery photos (public)
  */
 export const ListGalleryPhotosResponseItem = zod.object({

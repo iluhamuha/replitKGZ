@@ -10,6 +10,7 @@ import {
   useAdminCreateGalleryPhoto,
   useAdminUpdateGalleryPhoto,
   useAdminDeleteGalleryPhoto,
+  useAdminLogout,
   BookingStatusUpdateStatus
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,7 +31,8 @@ import {
   Check,
   X,
   Trash2,
-  Image
+  Image,
+  LogOut
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -116,6 +118,7 @@ export default function Admin() {
   const createPhoto = useAdminCreateGalleryPhoto();
   const updatePhoto = useAdminUpdateGalleryPhoto();
   const deletePhoto = useAdminDeleteGalleryPhoto();
+  const logout = useAdminLogout();
 
   const galleryForm = useForm<GalleryPhotoFormValues>({
     resolver: zodResolver(galleryPhotoSchema),
@@ -264,6 +267,15 @@ export default function Admin() {
           <h1 className="text-3xl font-bold tracking-tight">Administrace</h1>
           <p className="text-muted-foreground mt-1">Správa zájezdů a rezervací</p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => logout.mutate(undefined, { onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/auth/status"] }) })}
+          disabled={logout.isPending}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Odhlásit se
+        </Button>
       </div>
 
       {/* Stats Cards */}

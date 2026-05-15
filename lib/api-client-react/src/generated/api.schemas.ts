@@ -140,6 +140,24 @@ export interface QrPaymentDetails {
   customerEmail: string;
 }
 
+export interface AuthStatus {
+  authenticated: boolean;
+  hasPassword: boolean;
+}
+
+export interface AuthResult {
+  success: boolean;
+  message?: string;
+}
+
+export interface LoginBody {
+  password: string;
+}
+
+export interface SetupPasswordBody {
+  password: string;
+}
+
 export interface GalleryPhoto {
   id: number;
   imageUrl: string;
