@@ -105,7 +105,7 @@ function TripDatesSection({ tripId, tripDays }: { tripId: number; tripDays: numb
                       {d.availableSpots !== null && d.availableSpots !== undefined && (
                         <span className="text-sm text-muted-foreground flex items-center gap-1">
                           <Users className="h-3.5 w-3.5" />
-                          {d.bookedCount ?? 0} lidí · {Math.max(0, d.availableSpots - (d.bookedCount ?? 0))} volných míst
+                          {d.availableSpots} lidí · {Math.max(0, d.availableSpots - (d.bookedCount ?? 0))} volných míst
                         </span>
                       )}
                       {d.notes && (
@@ -609,7 +609,7 @@ export default function TripDetail() {
                                             {d.availableSpots != null && (
                                               <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                 <Users className="h-3 w-3" />
-                                                {d.bookedCount ?? 0} lidí · {Math.max(0, d.availableSpots - (d.bookedCount ?? 0))} volných míst
+                                                {d.availableSpots} lidí · {Math.max(0, d.availableSpots - (d.bookedCount ?? 0))} volných míst
                                               </span>
                                             )}
                                             {d.notes && (
