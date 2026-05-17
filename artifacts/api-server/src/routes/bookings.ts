@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, inArray } from "drizzle-orm";
-import { db, tripsTable, bookingsTable } from "@workspace/db";
+import { db, tripsTable, bookingsTable, tripDatesTable } from "@workspace/db";
 import {
   CreateBookingParams,
   CreateBookingBody,
@@ -15,11 +15,18 @@ import {
 
 const router: IRouter = Router();
 
-function formatBooking(booking: typeof bookingsTable.$inferSelect, trip?: typeof tripsTable.$inferSelect) {
+function formatBooking(
+  booking: typeof bookingsTable.$inferSelect,
+  trip?: typeof tripsTable.$inferSelect,
+  tripDate?: typeof tripDatesTable.$inferSelect | null,
+) {
   return {
     ...booking,
     amountCzk: parseFloat(booking.amountCzk),
     createdAt: booking.createdAt.toISOString(),
+    tripDate: tripDate
+      ? { departureDate: tripDate.departureDate, returnDate: tripDate.returnDate ?? null }
+      : null,
     trip: trip
       ? {
           ...trip,
@@ -107,15 +114,20 @@ router.get("/admin/bookings", async (_req, res): Promise<void> => {
 
   const tripIds = [...new Set(bookings.map((b) => b.tripId))];
   const trips = tripIds.length
-    ? await db
-        .select()
-        .from(tripsTable)
-        .where(inArray(tripsTable.id, tripIds))
+    ? await db.select().from(tripsTable).where(inArray(tripsTable.id, tripIds))
+    : [];
+
+  const dateIds = [...new Set(bookings.map((b) => b.tripDateId).filter((id): id is number => id !== null))];
+  const tripDates = dateIds.length
+    ? await db.select().from(tripDatesTable).where(inArray(tripDatesTable.id, dateIds))
     : [];
 
   const tripMap = new Map(trips.map((t) => [t.id, t]));
+  const dateMap = new Map(tripDates.map((d) => [d.id, d]));
 
-  const result = bookings.map((b) => formatBooking(b, tripMap.get(b.tripId)));
+  const result = bookings.map((b) =>
+    formatBooking(b, tripMap.get(b.tripId), b.tripDateId ? dateMap.get(b.tripDateId) : null)
+  );
   res.json(AdminListBookingsResponse.parse(result));
 });
 

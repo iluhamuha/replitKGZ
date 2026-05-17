@@ -53,6 +53,12 @@ export interface TripUpdate {
   priceExcludes?: string;
 }
 
+export type BookingTripDate = {
+  departureDate?: string;
+  /** @nullable */
+  returnDate?: string | null;
+} | null;
+
 export type BookingBookingType =
   (typeof BookingBookingType)[keyof typeof BookingBookingType];
 
@@ -83,6 +89,7 @@ export interface Booking {
   tripId: number;
   /** @nullable */
   tripDateId?: number | null;
+  tripDate?: BookingTripDate;
   trip?: Trip;
   customerName: string;
   customerEmail: string;

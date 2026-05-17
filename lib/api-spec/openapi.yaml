@@ -747,6 +747,14 @@ components:
           type: integer
         tripDateId:
           type: ["integer", "null"]
+        tripDate:
+          type: object
+          nullable: true
+          properties:
+            departureDate:
+              type: string
+            returnDate:
+              type: ["string", "null"]
         trip:
           $ref: "#/components/schemas/Trip"
         customerName:

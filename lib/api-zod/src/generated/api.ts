@@ -117,6 +117,12 @@ export const GetBookingResponse = zod.object({
   id: zod.number(),
   tripId: zod.number(),
   tripDateId: zod.number().nullish(),
+  tripDate: zod
+    .object({
+      departureDate: zod.string().optional(),
+      returnDate: zod.string().nullish(),
+    })
+    .nullish(),
   trip: zod
     .object({
       id: zod.number(),
@@ -297,6 +303,12 @@ export const AdminListBookingsResponseItem = zod.object({
   id: zod.number(),
   tripId: zod.number(),
   tripDateId: zod.number().nullish(),
+  tripDate: zod
+    .object({
+      departureDate: zod.string().optional(),
+      returnDate: zod.string().nullish(),
+    })
+    .nullish(),
   trip: zod
     .object({
       id: zod.number(),
@@ -342,6 +354,12 @@ export const AdminUpdateBookingStatusResponse = zod.object({
   id: zod.number(),
   tripId: zod.number(),
   tripDateId: zod.number().nullish(),
+  tripDate: zod
+    .object({
+      departureDate: zod.string().optional(),
+      returnDate: zod.string().nullish(),
+    })
+    .nullish(),
   trip: zod
     .object({
       id: zod.number(),

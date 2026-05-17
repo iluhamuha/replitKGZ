@@ -18,6 +18,7 @@ export * from "./bookingPaymentMethod";
 export * from "./bookingStatus";
 export * from "./bookingStatusUpdate";
 export * from "./bookingStatusUpdateStatus";
+export * from "./bookingTripDate";
 export * from "./errorEnvelope";
 export * from "./galleryPhoto";
 export * from "./galleryPhotoInput";

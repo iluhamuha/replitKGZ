@@ -8,6 +8,7 @@
 import type { BookingBookingType } from "./bookingBookingType";
 import type { BookingPaymentMethod } from "./bookingPaymentMethod";
 import type { BookingStatus } from "./bookingStatus";
+import type { BookingTripDate } from "./bookingTripDate";
 import type { Trip } from "./trip";
 
 export interface Booking {
@@ -15,6 +16,7 @@ export interface Booking {
   tripId: number;
   /** @nullable */
   tripDateId?: number | null;
+  tripDate?: BookingTripDate;
   trip?: Trip;
   customerName: string;
   customerEmail: string;

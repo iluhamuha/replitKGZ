@@ -1035,6 +1035,7 @@ export default function Admin() {
                         <th className="h-12 px-4 font-medium text-muted-foreground">ID</th>
                         <th className="h-12 px-4 font-medium text-muted-foreground">Klient</th>
                         <th className="h-12 px-4 font-medium text-muted-foreground">Zájezd</th>
+                        <th className="h-12 px-4 font-medium text-muted-foreground">Termín</th>
                         <th className="h-12 px-4 font-medium text-muted-foreground">Typ</th>
                         <th className="h-12 px-4 font-medium text-muted-foreground text-right">Částka</th>
                         <th className="h-12 px-4 font-medium text-muted-foreground">Vytvořeno</th>
@@ -1051,6 +1052,15 @@ export default function Admin() {
                             <div className="text-xs text-muted-foreground">{booking.customerEmail}</div>
                           </td>
                           <td className="p-4">{booking.trip?.name || `Zájezd #${booking.tripId}`}</td>
+                          <td className="p-4 text-sm">
+                            {booking.tripDate ? (
+                              <span>
+                                {format(new Date(booking.tripDate.departureDate + "T00:00:00"), "d. M. yyyy", { locale: cs })}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
                           <td className="p-4">
                             <Badge variant="outline">
                               {booking.bookingType === 'deposit' ? 'Záloha' : 'Plná platba'}
