@@ -613,7 +613,7 @@ function TripDatesManager({ tripId, tripName }: { tripId: number; tripName: stri
                       title="Kliknout pro úpravu kapacity"
                     >
                       <Users className="h-3 w-3" />
-                      {d.availableSpots != null ? d.availableSpots : "∞"} lidí · {d.availableSpots != null ? Math.max(0, d.availableSpots - (d.bookedCount ?? 0)) : "∞"} volných míst
+                      kapacita {d.availableSpots != null ? d.availableSpots : "∞"} · {d.availableSpots != null ? Math.max(0, d.availableSpots - (d.bookedCount ?? 0)) : "∞"} volných míst
                       <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
                     </button>
                   )}
