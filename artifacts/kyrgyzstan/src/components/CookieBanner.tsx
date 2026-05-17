@@ -1,29 +1,11 @@
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Cookie } from "lucide-react";
-
-const STORAGE_KEY = "cookie_consent";
+import { useCookieConsent } from "@/hooks/useCookieConsent";
 
 export function CookieBanner() {
-  const [visible, setVisible] = useState(false);
+  const { consent, accept, decline } = useCookieConsent();
 
-  useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      setVisible(true);
-    }
-  }, []);
-
-  if (!visible) return null;
-
-  function accept() {
-    localStorage.setItem(STORAGE_KEY, "accepted");
-    setVisible(false);
-  }
-
-  function decline() {
-    localStorage.setItem(STORAGE_KEY, "declined");
-    setVisible(false);
-  }
+  if (consent !== null) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">

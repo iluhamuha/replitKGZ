@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
+import { useCookieConsent } from "@/hooks/useCookieConsent";
 
 import Home from "@/pages/Home";
 import TripDetail from "@/pages/TripDetail";
@@ -44,6 +46,26 @@ function Router() {
   );
 }
 
+function Analytics() {
+  const { consent } = useCookieConsent();
+
+  useEffect(() => {
+    if (consent !== "accepted") return;
+
+    // ─── Add analytics scripts here when ready ───────────────────────────
+    // Example — Google Analytics:
+    //   const GA_ID = "G-XXXXXXXXXX";
+    //   const script = document.createElement("script");
+    //   script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+    //   script.async = true;
+    //   document.head.appendChild(script);
+    //   window.gtag?.("config", GA_ID);
+    // ────────────────────────────────────────────────────────────────────
+  }, [consent]);
+
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -53,6 +75,7 @@ function App() {
         </WouterRouter>
         <Toaster />
         <CookieBanner />
+        <Analytics />
       </TooltipProvider>
     </QueryClientProvider>
   );
