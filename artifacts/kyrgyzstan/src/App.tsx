@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { CookieBanner } from "@/components/CookieBanner";
 
 import Home from "@/pages/Home";
 import TripDetail from "@/pages/TripDetail";
@@ -51,6 +52,7 @@ function App() {
           <Router />
         </WouterRouter>
         <Toaster />
+        <CookieBanner />
       </TooltipProvider>
     </QueryClientProvider>
   );
