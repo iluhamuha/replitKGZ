@@ -287,7 +287,7 @@ export default function TripDetail() {
       customerEmail: "",
       customerPhone: "",
       bookingType: BookingInputBookingType.deposit,
-      paymentMethod: BookingInputPaymentMethod.card,
+      paymentMethod: BookingInputPaymentMethod.qr,
     },
   });
 
@@ -609,39 +609,47 @@ export default function TripDetail() {
                     
                     <Separator />
                     
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <h3 className="font-semibold text-lg">Platební metoda</h3>
                       <FormField
                         control={form.control}
                         name="paymentMethod"
                         render={({ field }) => (
-                          <FormItem className="space-y-3">
+                          <FormItem>
                             <FormControl>
                               <RadioGroup
                                 onValueChange={field.onChange}
                                 defaultValue={field.value}
-                                className="grid grid-cols-2 gap-3"
+                                className="flex flex-col gap-2"
                               >
-                                <FormItem>
-                                  <FormLabel className="[&:has([data-state=checked])>div]:border-primary [&:has([data-state=checked])>div]:bg-primary/5 cursor-pointer">
-                                    <FormControl>
-                                      <RadioGroupItem value="card" className="sr-only" />
-                                    </FormControl>
-                                    <div className="flex flex-col items-center justify-between rounded-lg border-2 border-muted bg-card p-4 hover:bg-accent hover:text-accent-foreground transition-all">
-                                      <CreditCard className="mb-3 h-6 w-6" />
-                                      <span className="font-medium text-sm">Karta</span>
-                                    </div>
-                                  </FormLabel>
-                                </FormItem>
-                                
                                 <FormItem>
                                   <FormLabel className="[&:has([data-state=checked])>div]:border-primary [&:has([data-state=checked])>div]:bg-primary/5 cursor-pointer">
                                     <FormControl>
                                       <RadioGroupItem value="qr" className="sr-only" />
                                     </FormControl>
-                                    <div className="flex flex-col items-center justify-between rounded-lg border-2 border-muted bg-card p-4 hover:bg-accent hover:text-accent-foreground transition-all">
-                                      <QrCode className="mb-3 h-6 w-6" />
-                                      <span className="font-medium text-sm">QR Platba</span>
+                                    <div className="rounded-xl border-2 border-muted bg-card p-4 hover:bg-accent transition-all">
+                                      <div className="flex items-center gap-3 mb-2">
+                                        <QrCode className="h-6 w-6 text-primary shrink-0" />
+                                        <div>
+                                          <span className="font-semibold text-base">QR Platba</span>
+                                          <span className="ml-2 text-xs font-medium bg-green-100 text-green-700 rounded-full px-2 py-0.5">0% poplatek</span>
+                                        </div>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground leading-snug">
+                                        Bankovní převod přes QR kód — naskenujete mobilní bankovnictví a platba se vyplní sama. Potvrzení do 24 h.
+                                      </p>
+                                    </div>
+                                  </FormLabel>
+                                </FormItem>
+
+                                <FormItem>
+                                  <FormLabel className="[&:has([data-state=checked])>div]:border-primary [&:has([data-state=checked])>div]:bg-primary/5 cursor-pointer">
+                                    <FormControl>
+                                      <RadioGroupItem value="card" className="sr-only" />
+                                    </FormControl>
+                                    <div className="rounded-lg border border-muted bg-card px-4 py-2.5 hover:bg-accent transition-all flex items-center gap-3">
+                                      <CreditCard className="h-4 w-4 text-muted-foreground shrink-0" />
+                                      <span className="text-sm text-muted-foreground">Platba kartou / Google Pay / Apple Pay</span>
                                     </div>
                                   </FormLabel>
                                 </FormItem>
