@@ -341,6 +341,31 @@ paths:
           description: Trip not found
 
   /admin/dates/{id}:
+    patch:
+      operationId: adminUpdateTripDate
+      tags: [dates]
+      summary: Admin - update a departure date
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripDateUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDate"
+        "404":
+          description: Not found
     delete:
       operationId: adminDeleteTripDate
       tags: [dates]
@@ -883,8 +908,21 @@ components:
           description: ISO date YYYY-MM-DD
         availableSpots:
           type: ["integer", "null"]
+        bookedCount:
+          type: integer
+          description: Number of non-cancelled bookings for this date
         notes:
           type: ["string", "null"]
+
+    TripDateUpdate:
+      type: object
+      properties:
+        availableSpots:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
 
     TripDateInput:
       type: object

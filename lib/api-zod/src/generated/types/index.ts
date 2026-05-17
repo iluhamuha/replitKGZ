@@ -30,6 +30,7 @@ export * from "./stripeSessionResult";
 export * from "./trip";
 export * from "./tripDate";
 export * from "./tripDateInput";
+export * from "./tripDateUpdate";
 export * from "./tripInput";
 export * from "./tripUpdate";
 export * from "./uploadUrlRequest";

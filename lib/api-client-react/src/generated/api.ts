@@ -34,6 +34,7 @@ import type {
   Trip,
   TripDate,
   TripDateInput,
+  TripDateUpdate,
   TripInput,
   TripUpdate,
   UploadUrlRequest,
@@ -1368,6 +1369,93 @@ export const useAdminCreateTripDate = <
   TContext
 > => {
   return useMutation(getAdminCreateTripDateMutationOptions(options));
+};
+
+/**
+ * @summary Admin - update a departure date
+ */
+export const getAdminUpdateTripDateUrl = (id: number) => {
+  return `/api/admin/dates/${id}`;
+};
+
+export const adminUpdateTripDate = async (
+  id: number,
+  tripDateUpdate: TripDateUpdate,
+  options?: RequestInit,
+): Promise<TripDate> => {
+  return customFetch<TripDate>(getAdminUpdateTripDateUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(tripDateUpdate),
+  });
+};
+
+export const getAdminUpdateTripDateMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateTripDate>>,
+    TError,
+    { id: number; data: BodyType<TripDateUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateTripDate>>,
+  TError,
+  { id: number; data: BodyType<TripDateUpdate> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateTripDate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateTripDate>>,
+    { id: number; data: BodyType<TripDateUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateTripDate(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateTripDateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateTripDate>>
+>;
+export type AdminUpdateTripDateMutationBody = BodyType<TripDateUpdate>;
+export type AdminUpdateTripDateMutationError = ErrorType<void>;
+
+/**
+ * @summary Admin - update a departure date
+ */
+export const useAdminUpdateTripDate = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateTripDate>>,
+    TError,
+    { id: number; data: BodyType<TripDateUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateTripDate>>,
+  TError,
+  { id: number; data: BodyType<TripDateUpdate> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateTripDateMutationOptions(options));
 };
 
 /**

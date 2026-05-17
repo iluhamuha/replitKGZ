@@ -188,7 +188,14 @@ export interface TripDate {
   returnDate?: string | null;
   /** @nullable */
   availableSpots?: number | null;
+  /** Number of non-cancelled bookings for this date */
+  bookedCount?: number;
   /** @nullable */
+  notes?: string | null;
+}
+
+export interface TripDateUpdate {
+  availableSpots?: number | null;
   notes?: string | null;
 }
 

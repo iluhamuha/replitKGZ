@@ -13,6 +13,7 @@ import {
   useAdminLogout,
   useAdminListTripDates,
   useAdminCreateTripDate,
+  useAdminUpdateTripDate,
   useAdminDeleteTripDate,
   BookingStatusUpdateStatus,
   type Trip,
@@ -403,9 +404,11 @@ function TripDatesManager({ tripId, tripName }: { tripId: number; tripName: stri
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
+  const [editingSpots, setEditingSpots] = useState<{ id: number; value: string } | null>(null);
 
   const { data: dates, isLoading } = useAdminListTripDates(tripId);
   const createDate = useAdminCreateTripDate();
+  const updateDate = useAdminUpdateTripDate();
   const deleteDate = useAdminDeleteTripDate();
 
   const dateForm = useForm<TripDateFormValues>({
@@ -437,6 +440,22 @@ function TripDatesManager({ tripId, tripName }: { tripId: number; tripName: stri
           toast({ title: "Termín přidán" });
         },
         onError: () => toast({ title: "Chyba při přidávání termínu", variant: "destructive" }),
+      }
+    );
+  };
+
+  const handleSaveSpots = (id: number) => {
+    if (!editingSpots) return;
+    const spots = editingSpots.value === "" ? null : parseInt(editingSpots.value, 10);
+    updateDate.mutate(
+      { id, data: { availableSpots: spots } },
+      {
+        onSuccess: () => {
+          invalidateDates();
+          setEditingSpots(null);
+          toast({ title: "Kapacita uložena" });
+        },
+        onError: () => toast({ title: "Chyba při ukládání", variant: "destructive" }),
       }
     );
   };
@@ -562,24 +581,49 @@ function TripDatesManager({ tripId, tripName }: { tripId: number; tripName: stri
       ) : (
         <div className="space-y-2">
           {dates.map((d: TripDate) => (
-            <div key={d.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-muted/30">
-              <div className="flex flex-col gap-0.5">
+            <div key={d.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-muted/30 gap-2">
+              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                 <span className="font-medium">
                   {formatCzechDate(d.departureDate)}
                   {d.returnDate ? ` – ${formatCzechDate(d.returnDate)}` : ""}
                 </span>
-                {(d.notes || d.availableSpots !== null) && (
-                  <span className="text-xs text-muted-foreground">
-                    {d.availableSpots !== null && `${d.availableSpots} míst`}
-                    {d.availableSpots !== null && d.notes && " · "}
-                    {d.notes}
-                  </span>
-                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {editingSpots?.id === d.id ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        className="h-6 w-20 text-xs px-1"
+                        placeholder="míst"
+                        value={editingSpots.value}
+                        onChange={(e) => setEditingSpots({ id: d.id, value: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveSpots(d.id);
+                          if (e.key === "Escape") setEditingSpots(null);
+                        }}
+                        autoFocus
+                      />
+                      <Button size="sm" className="h-6 text-xs px-2" onClick={() => handleSaveSpots(d.id)} disabled={updateDate.isPending}>Uložit</Button>
+                      <Button size="sm" variant="ghost" className="h-6 text-xs px-1" onClick={() => setEditingSpots(null)}>✕</Button>
+                    </div>
+                  ) : (
+                    <button
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 group"
+                      onClick={() => setEditingSpots({ id: d.id, value: d.availableSpots != null ? String(d.availableSpots) : "" })}
+                      title="Kliknout pro úpravu kapacity"
+                    >
+                      <Users className="h-3 w-3" />
+                      {d.bookedCount ?? 0} lidí · {d.availableSpots != null ? Math.max(0, d.availableSpots - (d.bookedCount ?? 0)) : "∞"} volných míst
+                      <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+                    </button>
+                  )}
+                  {d.notes && <span className="text-xs text-muted-foreground italic">{d.notes}</span>}
+                </div>
               </div>
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7 text-destructive hover:text-destructive"
+                className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
                 onClick={() => handleDelete(d.id)}
               >
                 <Trash2 className="h-3.5 w-3.5" />
