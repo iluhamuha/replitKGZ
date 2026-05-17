@@ -60,6 +60,7 @@ router.post("/trips/:id/bookings", async (req, res): Promise<void> => {
     .insert(bookingsTable)
     .values({
       tripId: trip.id,
+      tripDateId: parsed.data.tripDateId ?? null,
       customerName: parsed.data.customerName,
       customerEmail: parsed.data.customerEmail,
       customerPhone: parsed.data.customerPhone ?? null,

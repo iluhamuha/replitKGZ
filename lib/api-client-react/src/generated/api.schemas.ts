@@ -81,6 +81,8 @@ export const BookingStatus = {
 export interface Booking {
   id: number;
   tripId: number;
+  /** @nullable */
+  tripDateId?: number | null;
   trip?: Trip;
   customerName: string;
   customerEmail: string;
@@ -115,6 +117,7 @@ export interface BookingInput {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
+  tripDateId?: number | null;
   bookingType: BookingInputBookingType;
   paymentMethod: BookingInputPaymentMethod;
 }

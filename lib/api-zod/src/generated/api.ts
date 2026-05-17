@@ -101,6 +101,7 @@ export const CreateBookingBody = zod.object({
   customerName: zod.string(),
   customerEmail: zod.string(),
   customerPhone: zod.string().optional(),
+  tripDateId: zod.number().nullish(),
   bookingType: zod.enum(["deposit", "full"]),
   paymentMethod: zod.enum(["card", "qr"]),
 });
@@ -115,6 +116,7 @@ export const GetBookingParams = zod.object({
 export const GetBookingResponse = zod.object({
   id: zod.number(),
   tripId: zod.number(),
+  tripDateId: zod.number().nullish(),
   trip: zod
     .object({
       id: zod.number(),
@@ -294,6 +296,7 @@ export const AdminDeleteTripDateParams = zod.object({
 export const AdminListBookingsResponseItem = zod.object({
   id: zod.number(),
   tripId: zod.number(),
+  tripDateId: zod.number().nullish(),
   trip: zod
     .object({
       id: zod.number(),
@@ -338,6 +341,7 @@ export const AdminUpdateBookingStatusBody = zod.object({
 export const AdminUpdateBookingStatusResponse = zod.object({
   id: zod.number(),
   tripId: zod.number(),
+  tripDateId: zod.number().nullish(),
   trip: zod
     .object({
       id: zod.number(),

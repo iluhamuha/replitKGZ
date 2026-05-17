@@ -33,6 +33,7 @@ const bookingSchema = z.object({
   customerName: z.string().min(2, "Jméno musí mít alespoň 2 znaky"),
   customerEmail: z.string().email("Neplatná e-mailová adresa"),
   customerPhone: z.string().min(9, "Neplatné telefonní číslo").optional().or(z.literal("")),
+  tripDateId: z.number().nullable().optional(),
   bookingType: z.nativeEnum(BookingInputBookingType),
   paymentMethod: z.nativeEnum(BookingInputPaymentMethod),
 });
@@ -280,12 +281,18 @@ export default function TripDetail() {
   const createBooking = useCreateBooking();
   const createStripeSession = useCreateStripeSession();
 
+  const { data: datesData } = useGetTripDates(tripId ?? 0);
+  const futureDates = (datesData ?? []).filter(
+    (d) => new Date(d.departureDate + "T00:00:00") >= new Date(new Date().toDateString())
+  );
+
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       customerName: "",
       customerEmail: "",
       customerPhone: "",
+      tripDateId: null,
       bookingType: BookingInputBookingType.deposit,
       paymentMethod: BookingInputPaymentMethod.qr,
     },
@@ -563,6 +570,62 @@ export default function TripDetail() {
                           </FormItem>
                         )}
                       />
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-lg">Termín odjezdu</h3>
+                      {futureDates.length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic">
+                          Termíny budou brzy zveřejněny — po rezervaci vás zkontaktujeme.
+                        </p>
+                      ) : (
+                        <FormField
+                          control={form.control}
+                          name="tripDateId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <RadioGroup
+                                  onValueChange={(val) => field.onChange(Number(val))}
+                                  value={field.value != null ? String(field.value) : ""}
+                                  className="flex flex-col gap-2"
+                                >
+                                  {futureDates.map((d) => (
+                                    <FormItem key={d.id}>
+                                      <FormLabel className="[&:has([data-state=checked])>div]:border-primary [&:has([data-state=checked])>div]:bg-primary/5 cursor-pointer">
+                                        <FormControl>
+                                          <RadioGroupItem value={String(d.id)} className="sr-only" />
+                                        </FormControl>
+                                        <div className="rounded-lg border-2 border-muted bg-card px-4 py-3 hover:bg-accent transition-all">
+                                          <p className="font-semibold text-sm">
+                                            {formatCzechDate(d.departureDate)}
+                                            {d.returnDate && (
+                                              <span className="text-muted-foreground font-normal"> – {formatCzechDate(d.returnDate)}</span>
+                                            )}
+                                          </p>
+                                          <div className="flex gap-3 mt-0.5">
+                                            {d.availableSpots != null && (
+                                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <Users className="h-3 w-3" />{d.availableSpots} míst
+                                              </span>
+                                            )}
+                                            {d.notes && (
+                                              <span className="text-xs text-muted-foreground italic">{d.notes}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </FormLabel>
+                                    </FormItem>
+                                  ))}
+                                </RadioGroup>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                     </div>
 
                     <Separator />

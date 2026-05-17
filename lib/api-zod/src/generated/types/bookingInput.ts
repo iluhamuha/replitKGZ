@@ -12,6 +12,7 @@ export interface BookingInput {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
+  tripDateId?: number | null;
   bookingType: BookingInputBookingType;
   paymentMethod: BookingInputPaymentMethod;
 }

@@ -745,6 +745,8 @@ components:
           type: integer
         tripId:
           type: integer
+        tripDateId:
+          type: ["integer", "null"]
         trip:
           $ref: "#/components/schemas/Trip"
         customerName:
@@ -779,6 +781,9 @@ components:
           type: string
         customerPhone:
           type: string
+        tripDateId:
+          type: integer
+          nullable: true
         bookingType:
           type: string
           enum: [deposit, full]

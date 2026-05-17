@@ -13,6 +13,8 @@ import type { Trip } from "./trip";
 export interface Booking {
   id: number;
   tripId: number;
+  /** @nullable */
+  tripDateId?: number | null;
   trip?: Trip;
   customerName: string;
   customerEmail: string;
