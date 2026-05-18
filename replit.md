@@ -57,10 +57,30 @@ Czech travel agency website for adventure trips to Kyrgyzstan. Customers browse 
 - Website is in Czech language throughout
 - Target market: Czech customers booking trips from Prague
 
+## Deployment (Railway)
+
+The project is configured for Railway. `railway.json` runs `pnpm install && pnpm run build`, then on start runs DB migrations and boots the API server, which **also serves the built frontend** from `artifacts/kyrgyzstan/dist/public` on the same port (no separate frontend service needed).
+
+**Required Railway env vars** (see `.env.example` for the full list):
+- `DATABASE_URL` — provided automatically by Railway Postgres plugin
+- `SESSION_SECRET` — long random string
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+- `BANK_IBAN`, `BANK_RECIPIENT_NAME`
+- `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` — any S3-compatible provider (Cloudflare R2 recommended for the free tier)
+
+**After deploy:**
+1. Update your Stripe webhook endpoint to `https://<your-railway-domain>/api/stripe/webhook`
+2. Sessions are stored in the `user_sessions` table (auto-created by `connect-pg-simple`)
+
+**Migration baseline (only matters if migrating an existing populated DB):**
+- The initial migration `lib/db/migrations/0000_*.sql` creates all tables from scratch — safe for a brand-new Railway Postgres
+- If you point Railway at a database that already has these tables (e.g. moved from Replit), the boot-time `drizzle-kit migrate` will fail with "relation already exists". To baseline: connect to the DB and insert the first migration into Drizzle's bookkeeping table manually, OR drop the DB and let migrate recreate it (you'll lose data), OR run the migration once locally against an empty DB and copy data over
+
 ## Gotchas
 
 - After any OpenAPI spec change, run `pnpm --filter @workspace/api-spec run codegen` before editing routes or frontend
 - Before pushing `gallery_photos.trip_id` NOT NULL constraint to a DB with existing rows, run `pnpm --filter @workspace/scripts run migrate-gallery-trip-id` first to delete orphaned photos
+- For local dev only, use `pnpm --filter @workspace/db run push` to sync schema without migration files. For production (Railway), generate migrations with `pnpm --filter @workspace/db run generate` and they will be applied automatically by `migrate` on deploy
 - Stripe requires `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` env secrets to work
 - To configure your bank account for QR payments, set `BANK_IBAN` and `BANK_RECIPIENT_NAME` env secrets
 - For email confirmations (not yet implemented), add `EMAIL_HOST_USER` and `EMAIL_HOST_PASSWORD`
