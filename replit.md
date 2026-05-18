@@ -69,8 +69,11 @@ The project is configured for Railway. `railway.json` runs `pnpm install && pnpm
 - `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` — any S3-compatible provider (Cloudflare R2 recommended for the free tier)
 
 **After deploy:**
-1. Update your Stripe webhook endpoint to `https://<your-railway-domain>/api/stripe/webhook`
-2. Sessions are stored in the `user_sessions` table (auto-created by `connect-pg-simple`)
+1. Visit `https://<your-railway-domain>/admin` and set the initial admin password (first visitor with no password set becomes admin — do this immediately after deploy before anyone else can)
+2. Update your Stripe webhook endpoint to `https://<your-railway-domain>/api/stripe/webhook`
+3. Sessions are stored in the `user_sessions` table (auto-created by `connect-pg-simple`)
+
+**SSL note:** the Postgres pool auto-enables SSL when `NODE_ENV=production` (with `rejectUnauthorized: false` to accept Railway's cert). Set `PGSSL=disable` if you ever connect to a local plaintext DB in production mode, or `PGSSL=require` to force it on outside production.
 
 **Migration baseline (only matters if migrating an existing populated DB):**
 - The initial migration `lib/db/migrations/0000_*.sql` creates all tables from scratch — safe for a brand-new Railway Postgres

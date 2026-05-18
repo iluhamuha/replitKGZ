@@ -10,7 +10,19 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Enable SSL for managed Postgres (Railway, RDS, etc.) which generally
+// require it. Local/Docker DBs are typically plaintext, so we only enable
+// SSL in production by default. Override with `PGSSL=disable` to force off
+// or `PGSSL=require` to force on regardless of NODE_ENV.
+const pgsslMode = process.env.PGSSL;
+const sslEnabled =
+  pgsslMode === "require" ||
+  (pgsslMode !== "disable" && process.env.NODE_ENV === "production");
+
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: sslEnabled ? { rejectUnauthorized: false } : undefined,
+});
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
