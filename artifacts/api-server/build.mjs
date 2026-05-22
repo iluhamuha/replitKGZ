@@ -121,7 +121,7 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
   // Copy connect-pg-simple's table.sql into dist so it can be found at runtime
   const tableSqlSrc = path.resolve(
     artifactDir,
-    "../../node_modules/connect-pg-simple/table.sql",
+    "node_modules/connect-pg-simple/table.sql",
   );
   await copyFile(tableSqlSrc, path.resolve(distDir, "table.sql"));
 }
